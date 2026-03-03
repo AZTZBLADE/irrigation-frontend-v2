@@ -1,0 +1,224 @@
+:root{
+  --bg: #f2f6f3;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: rgba(15, 23, 42, .10);
+
+  --green-1: #16a34a;   /* primary */
+  --green-2: #22c55e;   /* hover */
+  --green-3: #14532d;   /* dark */
+  --ring: rgba(34, 197, 94, .18);
+
+  --radius: 18px;
+}
+
+*{ box-sizing: border-box; }
+html, body{ height: 100%; }
+
+body{
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 15% 25%, rgba(34,197,94,.12), transparent 60%),
+    radial-gradient(900px 500px at 85% 70%, rgba(22,163,74,.10), transparent 55%),
+    var(--bg);
+  color: var(--text);
+}
+
+/* ===== Layout ===== */
+.auth{
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+}
+
+.auth__left{
+  position: relative;
+  background: url('/assets/login-bg.jpg') center/cover no-repeat;
+  padding: 28px;
+  overflow: hidden;
+}
+
+/* green overlay */
+.auth__left::after{
+  content:"";
+  position:absolute; inset:0;
+  background: linear-gradient(90deg, rgba(20,83,45,.55), rgba(20,83,45,.12));
+}
+
+/* soft moving shine */
+.auth__left::before{
+  content:"";
+  position:absolute;
+  width: 480px; height: 480px;
+  left: -140px; top: -140px;
+  background: radial-gradient(circle, rgba(34,197,94,.35), transparent 65%);
+  filter: blur(18px);
+  animation: floatGlow 7s ease-in-out infinite;
+}
+
+@keyframes floatGlow{
+  0%,100% { transform: translate(0,0); opacity: .75; }
+  50%     { transform: translate(40px, 30px); opacity: .95; }
+}
+
+.brand{
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #fff;
+  animation: fadeDown .7s ease both;
+}
+
+.brand__logo{
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.14);
+  display:flex;align-items:center;justify-content:center;
+  font-size: 22px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 12px 30px rgba(0,0,0,.18);
+}
+
+.brand__name{
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: .2px;
+}
+
+.auth__right{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 28px;
+}
+
+/* ===== Card (animated) ===== */
+.card{
+  width: min(540px, 100%);
+  background: rgba(255,255,255,.92);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 30px;
+  box-shadow: 0 18px 60px rgba(2, 6, 23, .12);
+  backdrop-filter: blur(8px);
+
+  animation: popIn .55s ease both;
+}
+
+@keyframes popIn{
+  from{ opacity: 0; transform: translateY(14px) scale(.98); }
+  to  { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.card h1{
+  margin: 0 0 18px 0;
+  font-size: 34px;
+  letter-spacing: -0.6px;
+  color: #0b1220;
+}
+
+label{
+  display:block;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 14px 0 8px;
+  color: #1f2937;
+}
+
+/* ===== Inputs with icon ===== */
+.field{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  border: 1px solid rgba(15,23,42,.12);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #fff;
+  transition: border-color .15s, box-shadow .15s, transform .12s;
+}
+
+.field:hover{
+  transform: translateY(-1px);
+}
+
+.field:focus-within{
+  border-color: rgba(34,197,94,.55);
+  box-shadow: 0 0 0 5px var(--ring);
+}
+
+.icon{
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(34,197,94,.10);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.icon svg{ fill: rgba(20,83,45,.75); }
+
+input{
+  width: 100%;
+  border: 0;
+  outline: 0;
+  font-size: 15px;
+  color: var(--text);
+  background: transparent;
+}
+
+/* ===== Button green (animated) ===== */
+.btn{
+  width: 100%;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 14px;
+
+  background: linear-gradient(135deg, var(--green-1), var(--green-2));
+  color: #fff;
+  font-weight: 800;
+  font-size: 16px;
+
+  cursor: pointer;
+  box-shadow: 0 14px 30px rgba(34, 197, 94, .25);
+  transition: transform .08s, filter .15s, box-shadow .15s;
+}
+
+.btn:hover{
+  filter: brightness(1.02);
+  box-shadow: 0 18px 40px rgba(34, 197, 94, .30);
+}
+
+.btn:active{ transform: translateY(1px); }
+.btn:disabled{ opacity: .6; cursor: not-allowed; box-shadow: none; }
+
+.links{
+  display:flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+a{ text-decoration: none; }
+a.muted{ color: var(--muted); }
+a.accent{ color: var(--green-3); font-weight: 800; }
+
+.error{ color: #b91c1c; margin-top: 12px; }
+
+/* small animation for brand */
+@keyframes fadeDown{
+  from{ opacity: 0; transform: translateY(-10px); }
+  to  { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 900px){
+  .auth{ grid-template-columns: 1fr; }
+  .auth__left{ min-height: 260px; }
+}

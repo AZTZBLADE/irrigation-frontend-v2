@@ -1,0 +1,170 @@
+<div class="dash">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="side-brand">
+      <div class="side-logo">🌿</div>
+      <div class="side-title">
+        <div class="name">Irrigation</div>
+        <div class="sub">Admin Panel</div>
+      </div>
+    </div>
+
+    <nav class="menu">
+      <a class="item"
+         routerLink="/admin"
+         routerLinkActive="active"
+         [routerLinkActiveOptions]="{ exact: true }">
+        Dashboard
+      </a>
+
+      <a class="item"
+         routerLink="/admin/users"
+         routerLinkActive="active">
+        Users
+      </a>
+
+      <a class="item"
+         routerLink="/admin/farms"
+         routerLinkActive="active">
+        Farms
+      </a>
+
+      <a class="item"
+         routerLink="/admin/parcels"
+         routerLinkActive="active">
+        Parcels
+      </a>
+
+      <a class="item"
+         routerLink="/admin/tasks"
+         routerLinkActive="active">
+        Tasks
+      </a>
+
+      <a class="item"
+         routerLink="/admin/reports"
+         routerLinkActive="active">
+        Reports
+      </a>
+
+      <div class="sep"></div>
+
+      <a class="item danger" (click)="logout()">
+        Logout
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+
+    <!-- Header -->
+    <header class="topbar">
+      <div class="greeting">
+        <h1>Dashboard</h1>
+        <p>Overview of platform activity and performance.</p>
+      </div>
+
+      <div class="chip">Admin</div>
+    </header>
+
+    <!-- KPI Cards -->
+    <section class="kpis">
+      <div class="kpi" *ngFor="let k of kpis">
+        <div class="kpi__title">{{ k.title }}</div>
+        <div class="kpi__value">{{ k.value }}</div>
+        <div class="kpi__hint">{{ k.hint }}</div>
+      </div>
+    </section>
+
+    <!-- Charts & Metrics -->
+    <section class="grid">
+
+      <!-- Chart -->
+      <div class="panel">
+        <div class="panel__head">
+          <h2>Weekly Water Usage</h2>
+          <span class="tag green">Trend</span>
+        </div>
+
+        <div class="chart">
+          <svg viewBox="0 0 560 160" preserveAspectRatio="none">
+            <polyline class="line" [attr.points]="linePoints()"></polyline>
+          </svg>
+
+          <div class="xlabels">
+            <span *ngFor="let p of weeklyWater">{{ p.d }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metrics -->
+      <div class="panel">
+        <div class="panel__head">
+          <h2>Key Metrics</h2>
+          <span class="tag">Live</span>
+        </div>
+
+        <div class="metric" *ngFor="let s of stats">
+          <div class="metric__top">
+            <div class="metric__label">{{ s.label }}</div>
+            <div class="metric__value">{{ s.value }}%</div>
+          </div>
+
+          <div class="bar">
+            <div class="bar__fill" [style.width.%]="s.value"></div>
+          </div>
+        </div>
+
+        <div class="small-note">
+          Demo values for now. We will connect them to the backend later.
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Users Table -->
+    <section class="panel table">
+      <div class="panel__head">
+        <h2>Recent Users</h2>
+        <span class="tag green">New</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let u of recentUsers">
+              <td class="name">
+                <span class="avatar">{{ u.name[0] }}</span>
+                <span>{{ u.name }}</span>
+              </td>
+
+              <td class="muted">{{ u.email }}</td>
+
+              <td>
+                <span class="pill">{{ u.role }}</span>
+              </td>
+
+              <td>
+                <span class="status" [class.pending]="u.status === 'Pending'">
+                  {{ u.status }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>

@@ -1,0 +1,54 @@
+<div class="page">
+  <header class="header">
+    <div>
+      <h1>User Dashboard</h1>
+      <p class="sub">Welcome back, <b>{{ name }}</b> 👋</p>
+    </div>
+
+    <button class="btn danger" (click)="logout()">Logout</button>
+  </header>
+
+  <section class="grid">
+    <div class="card">
+      <h3>Account</h3>
+
+      <div class="row">
+        <span>Name</span>
+        <b>{{ name }}</b>
+      </div>
+
+      <div class="row">
+        <span>Email</span>
+        <b>{{ email }}</b>
+      </div>
+
+      <div class="row">
+        <span>Role</span>
+        <b>{{ role }}</b>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Quick actions</h3>
+
+      <div class="actions">
+        <button class="btn" (click)="goProfile()">Profile</button>
+        <button class="btn" (click)="goIrrigation()">Irrigation</button>
+        <button class="btn" (click)="goSensors()">Sensors</button>
+      </div>
+
+      <p class="hint">
+        (* حاليا الصفحات هاذم ممكن ماهمش موجودين — تنجم تبدّلهم بعد.)
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>Status</h3>
+      <div class="pill ok">Connected ✅</div>
+
+      <p class="hint">
+        Dashboard بسيطة توا. بعد نزيدولها data حقيقية (sensors/irrigation) كي تربط APIs.
+      </p>
+    </div>
+  </section>
+</div>
