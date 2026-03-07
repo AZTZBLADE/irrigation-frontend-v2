@@ -1,12 +1,9 @@
-import { Injectable, PLATFORM_ID, inject } from '@angular/core';
+import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
 import { Observable, tap } from 'rxjs';
 
-export type LoginPayload = {
-  email: string;
-  password: string;
-};
+export type LoginPayload = { email: string; password: string };
 
 export type LoginResponse = {
   token: string;
@@ -23,7 +20,6 @@ export type RegisterPayload = {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
 
@@ -35,11 +31,14 @@ export class AuthService {
       tap((res) => {
         if (!res?.token) return;
 
-        this.setItem('token', res.token);
+        // ✅ localStorage only in browser
+        if (!isPlatformBrowser(this.platformId)) return;
 
-        if (res.role) this.setItem('role', res.role);
-        if (res.name) this.setItem('name', res.name);
-        if (res.email) this.setItem('email', res.email);
+        localStorage.setItem('token', res.token);
+
+        if (res.role) localStorage.setItem('role', res.role);
+        if (res.name) localStorage.setItem('name', res.name);
+        if (res.email) localStorage.setItem('email', res.email);
       })
     );
   }
@@ -50,11 +49,6 @@ export class AuthService {
   }
 
   // ========================= HELPERS =========================
-  private setItem(key: string, value: string) {
-    if (!isPlatformBrowser(this.platformId)) return;
-    localStorage.setItem(key, value);
-  }
-
   getToken(): string | null {
     if (!isPlatformBrowser(this.platformId)) return null;
     return localStorage.getItem('token');
@@ -65,8 +59,19 @@ export class AuthService {
     return localStorage.getItem('role') || '';
   }
 
+  getName(): string {
+    if (!isPlatformBrowser(this.platformId)) return '';
+    return localStorage.getItem('name') || '';
+  }
+
+  getEmail(): string {
+    if (!isPlatformBrowser(this.platformId)) return '';
+    return localStorage.getItem('email') || '';
+  }
+
   isLoggedIn(): boolean {
-    return !!this.getToken();
+    const t = this.getToken();
+    return !!t && t.length > 10;
   }
 
   logout() {

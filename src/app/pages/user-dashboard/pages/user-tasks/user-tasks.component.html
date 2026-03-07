@@ -1,0 +1,167 @@
+<div class="tasks-page">
+  <div class="head">
+    <h2>Tasks</h2>
+  </div>
+
+  <div class="tabs">
+    <button class="tab" [class.active]="activeTab === 'planned'" (click)="setTab('planned')">
+      Planned ({{ plannedCount }})
+    </button>
+
+    <button class="tab" [class.active]="activeTab === 'ongoing'" (click)="setTab('ongoing')">
+      In Progress ({{ ongoingCount }})
+    </button>
+
+    <button class="tab" [class.active]="activeTab === 'completed'" (click)="setTab('completed')">
+      Completed ({{ completedCount }})
+    </button>
+  </div>
+
+  <div class="state" *ngIf="loading">Loading tasks...</div>
+  <div class="state error" *ngIf="error">{{ error }}</div>
+
+  <h3 class="section-title">
+    {{
+      activeTab === 'planned'
+        ? 'Planned Tasks'
+        : activeTab === 'ongoing'
+        ? 'In Progress Tasks'
+        : 'Completed Tasks'
+    }}
+  </h3>
+
+  <div class="grid" *ngIf="!loading">
+    <div class="card" *ngFor="let task of filteredTasks">
+      <div class="card-head">
+        <div class="loc">{{ task.location }}</div>
+
+        <span
+          class="badge"
+          [class.planned]="task.status === 'planned'"
+          [class.progress]="task.status === 'ongoing'"
+          [class.done]="task.status === 'completed'">
+          {{ statusLabel(task.status) }}
+        </span>
+      </div>
+
+      <div class="body">
+        <div class="row"><span>Task</span><b>{{ task.name }}</b></div>
+        <div class="row"><span>Start Time</span><b>{{ task.startTime }}</b></div>
+        <div class="row"><span>Duration</span><b>{{ task.duration }} min</b></div>
+        <div class="row"><span>Crop</span><b>{{ task.crop }}</b></div>
+        <div class="row"><span>Water</span><b>{{ task.waterAmount }} L</b></div>
+        <div class="row"><span>Debit</span><b>{{ task.debit }}</b></div>
+
+        <div class="progress-section" *ngIf="task.status === 'ongoing' || task.status === 'completed'">
+          <div class="progress-top">
+            <span>Progress</span>
+            <b>{{ getProgress(task) }}%</b>
+          </div>
+
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="getProgress(task)"></div>
+          </div>
+
+          <div class="timer-line">
+            <span *ngIf="task.status === 'ongoing'">
+              Remaining: {{ getRemainingTime(task) }}
+            </span>
+            <span *ngIf="task.status === 'completed'">
+              Finished
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="icon" title="Edit" (click)="editTask(task)">✏️</button>
+        <button class="icon danger" title="Delete" (click)="deleteTask(task)">🗑️</button>
+
+        <button
+          class="icon"
+          title="Start Task"
+          *ngIf="task.status !== 'ongoing' && task.status !== 'completed'"
+          (click)="markAsOngoing(task)">
+          ▶️
+        </button>
+
+        <button
+          class="icon ok"
+          title="Complete Task"
+          *ngIf="task.status !== 'completed'"
+          (click)="markAsComplete(task)">
+          ✅
+        </button>
+      </div>
+    </div>
+
+    <div class="empty" *ngIf="filteredTasks.length === 0">
+      No tasks in this category.
+    </div>
+  </div>
+
+  <button class="fab" type="button" (click)="openModal()">+</button>
+
+  <div class="backdrop" *ngIf="showModal" (click)="closeModal()"></div>
+
+  <div class="modal" *ngIf="showModal">
+    <div class="modal-title">
+      {{ editingTaskId ? 'Edit Task' : 'Add New Task' }}
+    </div>
+
+    <form class="form" [formGroup]="form" (ngSubmit)="submit()">
+      <label>
+        Task Name
+        <input type="text" formControlName="name" placeholder="Irrigation Secteur Nord" />
+      </label>
+
+      <label>
+        Location
+        <select formControlName="location">
+          <option *ngFor="let loc of locations" [value]="loc">{{ loc }}</option>
+        </select>
+      </label>
+
+      <label>
+        Start Time
+        <input type="datetime-local" formControlName="startTime" />
+      </label>
+
+      <label>
+        Duration (minutes)
+        <input type="number" formControlName="duration" />
+      </label>
+
+      <label>
+        Crop
+        <input type="text" formControlName="crop" placeholder="Pommes de terre" />
+      </label>
+
+      <label>
+        Water Amount (L)
+        <input type="number" formControlName="waterAmount" />
+      </label>
+
+      <label>
+        Debit
+        <input type="number" formControlName="debit" />
+      </label>
+
+      <label>
+        Status
+        <select formControlName="status">
+          <option value="planned">Planned</option>
+          <option value="ongoing">In Progress</option>
+          <option value="completed">Completed</option>
+        </select>
+      </label>
+
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" (click)="closeModal()">Cancel</button>
+        <button type="submit" class="btn primary" [disabled]="loading">
+          {{ editingTaskId ? 'Update Task' : 'Add Task' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
