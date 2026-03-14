@@ -1,40 +1,67 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Task, TaskService, TaskStatus } from '../../../../core/task.service';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  PLATFORM_ID,
+  inject,
+} from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import {
+  FormBuilder,
+  ReactiveFormsModule,
+  Validators,
+  FormsModule,
+} from '@angular/forms';
+import { TaskService, Task, TaskStatus } from '../../../../core/task.service';
 
-type UiTab = 'planned' | 'ongoing' | 'completed';
+type UiTab = 'planned' | 'ongoing' | 'terminated';
+type ViewMode = 'cards' | 'table';
+type DateSort = 'newest' | 'oldest';
 
 @Component({
   selector: 'app-user-tasks',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './user-tasks.component.html',
   styleUrl: './user-tasks.component.scss',
 })
 export class UserTasksComponent implements OnInit, OnDestroy {
+  private platformId = inject(PLATFORM_ID);
+  private isBrowser = isPlatformBrowser(this.platformId);
+
+  private L: any = null;
+  map: any = null;
+  marker: any = null;
+
   loading = false;
   error = '';
-  showModal = false;
-  activeTab: UiTab = 'planned';
 
   tasks: Task[] = [];
+
+  activeTab: UiTab = 'planned';
+  viewMode: ViewMode = 'cards';
+  dateSort: DateSort = 'newest';
+
+  searchTerm = '';
+
+  showModal = false;
   editingTaskId: number | null = null;
 
-  private intervalId: ReturnType<typeof setInterval> | null = null;
+  showMapModal = false;
+  selectedLatLng = '';
+
+  private intervalId: any;
   private updatingTaskIds = new Set<number>();
 
-  locations = ['Parcelle B12', 'Ain El Karma', 'El Manara'];
-
   form = this.fb.group({
-    name: ['', [Validators.required, Validators.minLength(3)]],
-    location: [this.locations[0], [Validators.required]],
-    startTime: ['', [Validators.required]],
+    name: ['', Validators.required],
+    location: ['', Validators.required],
+    startTime: ['', Validators.required],
     duration: [60, [Validators.required, Validators.min(1)]],
-    crop: ['', [Validators.required]],
-    waterAmount: [1200.5, [Validators.required, Validators.min(0)]],
+    crop: ['', Validators.required],
+    waterAmount: [1200, [Validators.required, Validators.min(0)]],
     debit: [20, [Validators.required, Validators.min(0)]],
-    status: ['planned' as UiTab, [Validators.required]],
+    status: ['planned' as UiTab, Validators.required],
   });
 
   constructor(
@@ -51,10 +78,12 @@ export class UserTasksComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
+    clearInterval(this.intervalId);
+
+    if (this.map) {
+      this.map.remove();
+      this.map = null;
     }
-    document.body.style.overflow = '';
   }
 
   loadTasks(): void {
@@ -67,47 +96,13 @@ export class UserTasksComponent implements OnInit, OnDestroy {
           ...task,
           status: (task.status || 'planned') as TaskStatus,
         }));
-
         this.loading = false;
         this.syncTasksWithTime();
       },
-      error: (err) => {
-        console.error('GET TASKS ERROR', err);
-        this.error = 'Failed to load tasks.';
+      error: () => {
+        this.error = 'Failed to load tasks';
         this.loading = false;
       },
-    });
-  }
-
-  syncTasksWithTime(): void {
-    const now = Date.now();
-
-    this.tasks.forEach((task) => {
-      if (task.id == null || !task.startTime || !task.duration) return;
-
-      const start = new Date(task.startTime).getTime();
-      if (isNaN(start)) return;
-
-      const end = start + Number(task.duration) * 60000;
-      const currentStatus = (task.status || 'planned') as UiTab;
-
-      if (now < start) {
-        task.status = 'planned';
-        return;
-      }
-
-      if (now >= start && now < end) {
-        if (currentStatus !== 'ongoing' && !this.updatingTaskIds.has(task.id)) {
-          this.markAsOngoing(task, false);
-        }
-        return;
-      }
-
-      if (now >= end) {
-        if (currentStatus !== 'completed' && !this.updatingTaskIds.has(task.id)) {
-          this.markAsComplete(task, false);
-        }
-      }
     });
   }
 
@@ -115,63 +110,85 @@ export class UserTasksComponent implements OnInit, OnDestroy {
     this.activeTab = tab;
   }
 
+  setView(mode: ViewMode): void {
+    this.viewMode = mode;
+  }
+
+  setDateSort(sort: DateSort): void {
+    this.dateSort = sort;
+  }
+
+  clearSearch(): void {
+    this.searchTerm = '';
+  }
+
   get filteredTasks(): Task[] {
-    return this.tasks.filter(
-      (task) => ((task.status || 'planned') as UiTab) === this.activeTab
-    );
+    const filtered = this.tasks.filter((task) => {
+      const statusOk = (task.status || 'planned') === this.activeTab;
+
+      const search = this.searchTerm.trim().toLowerCase();
+
+      const searchOk =
+        !search ||
+        task.name.toLowerCase().includes(search) ||
+        task.location.toLowerCase().includes(search) ||
+        task.crop.toLowerCase().includes(search);
+
+      return statusOk && searchOk;
+    });
+
+    return filtered.sort((a, b) => {
+      const dateA = a.startTime ? new Date(a.startTime).getTime() : 0;
+      const dateB = b.startTime ? new Date(b.startTime).getTime() : 0;
+
+      return this.dateSort === 'newest' ? dateB - dateA : dateA - dateB;
+    });
   }
 
   get plannedCount(): number {
-    return this.tasks.filter(
-      (task) => ((task.status || 'planned') as UiTab) === 'planned'
-    ).length;
+    return this.tasks.filter((t) => (t.status || 'planned') === 'planned').length;
   }
 
   get ongoingCount(): number {
-    return this.tasks.filter(
-      (task) => ((task.status || 'planned') as UiTab) === 'ongoing'
-    ).length;
+    return this.tasks.filter((t) => (t.status || 'planned') === 'ongoing').length;
   }
 
-  get completedCount(): number {
-    return this.tasks.filter(
-      (task) => ((task.status || 'planned') as UiTab) === 'completed'
-    ).length;
+  get terminatedCount(): number {
+    return this.tasks.filter((t) => (t.status || 'planned') === 'terminated').length;
   }
 
   openModal(): void {
-    this.error = '';
     this.editingTaskId = null;
+    this.error = '';
 
     this.form.reset({
       name: '',
-      location: this.locations[0],
+      location: '',
       startTime: '',
       duration: 60,
       crop: '',
-      waterAmount: 1200.5,
+      waterAmount: 1200,
       debit: 20,
       status: 'planned',
     });
 
+    this.selectedLatLng = '';
     this.showModal = true;
-    document.body.style.overflow = 'hidden';
   }
 
   closeModal(): void {
     this.showModal = false;
     this.editingTaskId = null;
-    document.body.style.overflow = '';
   }
 
   editTask(task: Task): void {
-    this.error = '';
     this.editingTaskId = task.id ?? null;
+    this.error = '';
 
     this.form.patchValue({
       name: task.name,
       location: task.location,
-      startTime: this.toDateTimeLocal(task.startTime),
+      startTime: task.startTime?.slice(0, 16),
       duration: task.duration,
       crop: task.crop,
       waterAmount: task.waterAmount,
@@ -179,38 +196,28 @@ export class UserTasksComponent implements OnInit, OnDestroy {
       status: (task.status || 'planned') as UiTab,
     });
 
+    this.selectedLatLng = task.location || '';
     this.showModal = true;
-    document.body.style.overflow = 'hidden';
   }
 
   submit(): void {
-    this.error = '';
-
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      this.error = 'Please fill all required fields.';
-      return;
-    }
-
-    const value = this.form.getRawValue();
-
-    const startTime =
-      value.startTime && value.startTime.length === 16
-        ? `${value.startTime}:00`
-        : (value.startTime || '');
-
-    const payload: Task = {
-      name: value.name || '',
-      location: value.location || '',
-      duration: Number(value.duration),
-      waterAmount: Number(value.waterAmount),
-      debit: Number(value.debit),
-      startTime,
-      crop: value.crop || '',
-      status: (value.status || 'planned') as TaskStatus,
-    };
+    if (this.form.invalid) return;
 
     this.loading = true;
+    this.error = '';
+
+    const raw = this.form.getRawValue();
+
+    const payload: Task = {
+      name: raw.name || '',
+      location: raw.location || '',
+      startTime: raw.startTime || '',
+      duration: Number(raw.duration || 0),
+      crop: raw.crop || '',
+      waterAmount: Number(raw.waterAmount || 0),
+      debit: Number(raw.debit || 0),
+      status: (raw.status || 'planned') as TaskStatus,
+    };
 
     if (this.editingTaskId !== null) {
       this.taskService.updateTask(this.editingTaskId, payload).subscribe({
@@ -219,10 +226,9 @@ export class UserTasksComponent implements OnInit, OnDestroy {
           this.closeModal();
           this.loadTasks();
         },
-        error: (err) => {
-          console.error('UPDATE ERROR', err);
+        error: () => {
+          this.error = 'Update failed';
           this.loading = false;
-          this.error = err?.error?.message || `Error ${err.status}: ${err.statusText}`;
         },
       });
     } else {
@@ -232,118 +238,207 @@ export class UserTasksComponent implements OnInit, OnDestroy {
           this.closeModal();
           this.loadTasks();
         },
-        error: (err) => {
-          console.error('CREATE ERROR', err);
+        error: () => {
+          this.error = 'Create failed';
           this.loading = false;
-          this.error = err?.error?.message || `Error ${err.status}: ${err.statusText}`;
         },
       });
     }
   }
 
   deleteTask(task: Task): void {
-    if (task.id == null) return;
-
-    const ok = confirm(`Delete task "${task.name}" ?`);
-    if (!ok) return;
-
-    this.loading = true;
+    if (!task.id) return;
+    if (!confirm('Delete this task ?')) return;
 
     this.taskService.deleteTask(task.id).subscribe({
       next: () => {
-        this.loading = false;
         this.tasks = this.tasks.filter((t) => t.id !== task.id);
       },
-      error: (err) => {
-        console.error('DELETE ERROR', err);
-        this.loading = false;
-        this.error = err?.error?.message || `Delete failed (${err.status})`;
+      error: () => {
+        this.error = 'Delete failed';
       },
     });
   }
 
-  markAsOngoing(task: Task, reload = true): void {
-    if (task.id == null) return;
+  markAsOngoing(task: Task): void {
+    if (!task.id) return;
     if (this.updatingTaskIds.has(task.id)) return;
 
     this.updatingTaskIds.add(task.id);
 
-    const updatedTask: Task = {
+    const updated: Task = {
       ...task,
       status: 'ongoing',
     };
 
-    this.taskService.updateTask(task.id, updatedTask).subscribe({
+    this.taskService.updateTask(task.id, updated).subscribe({
       next: () => {
         task.status = 'ongoing';
         this.updatingTaskIds.delete(task.id!);
-
-        if (reload) {
-          this.loadTasks();
-        }
       },
-      error: (err) => {
-        console.error('MARK ONGOING ERROR', err);
+      error: () => {
         this.updatingTaskIds.delete(task.id!);
-
-        if (reload) {
-          this.error = err?.error?.message || `Update failed (${err.status})`;
-        }
       },
     });
   }
 
-  markAsComplete(task: Task, reload = true): void {
-    if (task.id == null) return;
+  markAsTerminated(task: Task): void {
+    if (!task.id) return;
     if (this.updatingTaskIds.has(task.id)) return;
 
     this.updatingTaskIds.add(task.id);
 
-    const updatedTask: Task = {
+    const updated: Task = {
       ...task,
-      status: 'completed',
+      status: 'terminated',
     };
 
-    this.taskService.updateTask(task.id, updatedTask).subscribe({
+    this.taskService.updateTask(task.id, updated).subscribe({
       next: () => {
-        task.status = 'completed';
+        task.status = 'terminated';
         this.updatingTaskIds.delete(task.id!);
-
-        if (reload) {
-          this.loadTasks();
-        }
       },
-      error: (err) => {
-        console.error('MARK COMPLETE ERROR', err);
+      error: () => {
         this.updatingTaskIds.delete(task.id!);
-
-        if (reload) {
-          this.error = err?.error?.message || `Update failed (${err.status})`;
-        }
       },
     });
   }
 
-  statusLabel(status?: string): string {
-    const s = (status || 'planned') as UiTab;
+  async openMapModal(): Promise<void> {
+    this.showMapModal = true;
 
-    if (s === 'ongoing') return 'In Progress';
-    if (s === 'completed') return 'Completed';
-    return 'Planned';
+    if (this.isBrowser) {
+      setTimeout(async () => {
+        await this.initMap();
+
+        setTimeout(() => {
+          if (this.map) {
+            this.map.invalidateSize();
+          }
+          this.loadMapFromExistingLocation();
+        }, 200);
+      }, 100);
+    }
   }
 
-  toDateTimeLocal(dateTime?: string): string {
-    if (!dateTime) return '';
-    return dateTime.length >= 16 ? dateTime.slice(0, 16) : dateTime;
+  closeMapModal(): void {
+    this.showMapModal = false;
+
+    if (this.map) {
+      this.map.remove();
+      this.map = null;
+      this.marker = null;
+    }
+  }
+
+  confirmMapLocation(): void {
+    if (this.selectedLatLng) {
+      this.form.patchValue({
+        location: this.selectedLatLng,
+      });
+    }
+
+    this.closeMapModal();
+  }
+
+  async initMap(): Promise<void> {
+    if (!this.isBrowser) return;
+
+    if (!this.L) {
+      const leaflet = await import('leaflet');
+      this.L = leaflet;
+    }
+
+    if (this.map) {
+      this.map.remove();
+    }
+
+    this.map = this.L.map('task-map-modal').setView([36.8065, 10.1815], 13);
+
+    this.L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        attribution: '&copy; OpenStreetMap contributors',
+      }
+    ).addTo(this.map);
+
+    setTimeout(() => {
+      this.map.invalidateSize();
+    }, 200);
+
+    this.map.on('click', (e: any) => {
+      const lat = e.latlng.lat;
+      const lng = e.latlng.lng;
+
+      if (this.marker) {
+        this.map.removeLayer(this.marker);
+      }
+
+      this.marker = this.L.marker([lat, lng]).addTo(this.map);
+
+      this.selectedLatLng = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+      console.log('MAP CLICK', this.selectedLatLng);
+    });
+  }
+
+  loadMapFromExistingLocation(): void {
+    const value = this.form.get('location')?.value;
+
+    if (!value || typeof value !== 'string' || !value.includes(',')) return;
+    if (!this.map || !this.L) return;
+
+    const [latStr, lngStr] = value.split(',');
+    const lat = Number(latStr);
+    const lng = Number(lngStr);
+
+    if (isNaN(lat) || isNaN(lng)) return;
+
+    this.selectedLatLng = value;
+    this.map.setView([lat, lng], 13);
+
+    if (this.marker) {
+      this.map.removeLayer(this.marker);
+    }
+
+    this.marker = this.L.marker([lat, lng]).addTo(this.map);
+  }
+
+  syncTasksWithTime(): void {
+    const now = Date.now();
+
+    this.tasks.forEach((task) => {
+      if (!task.startTime || !task.duration) return;
+
+      const start = new Date(task.startTime).getTime();
+      const end = start + task.duration * 60000;
+
+      if (now >= end && task.status !== 'terminated') {
+        this.markAsTerminated(task);
+        return;
+      }
+
+      if (now >= start && now < end) {
+        task.status = 'ongoing';
+        return;
+      }
+
+      if (now < start) {
+        task.status = 'planned';
+      }
+    });
+  }
+
+  statusLabel(status?: string): string {
+    if (status === 'terminated') return 'Completed';
+    if (status === 'ongoing') return 'In Progress';
+    return 'Planned';
   }
 
   getProgress(task: Task): number {
     if (!task.startTime || !task.duration) return 0;
 
     const start = new Date(task.startTime).getTime();
-    if (isNaN(start)) return 0;
-
-    const end = start + Number(task.duration) * 60000;
+    const end = start + task.duration * 60000;
     const now = Date.now();
 
     if (now <= start) return 0;
@@ -356,12 +451,10 @@ export class UserTasksComponent implements OnInit, OnDestroy {
     if (!task.startTime || !task.duration) return '-';
 
     const start = new Date(task.startTime).getTime();
-    if (isNaN(start)) return '-';
-
-    const end = start + Number(task.duration) * 60000;
+    const end = start + task.duration * 60000;
     const now = Date.now();
-    const diff = end - now;
 
+    const diff = end - now;
     if (diff <= 0) return 'Finished';
 
     const totalSeconds = Math.floor(diff / 1000);

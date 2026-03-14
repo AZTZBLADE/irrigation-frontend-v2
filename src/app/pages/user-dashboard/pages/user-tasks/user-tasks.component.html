@@ -12,13 +12,10 @@
       In Progress ({{ ongoingCount }})
     </button>
 
-    <button class="tab" [class.active]="activeTab === 'completed'" (click)="setTab('completed')">
-      Completed ({{ completedCount }})
+    <button class="tab" [class.active]="activeTab === 'terminated'" (click)="setTab('terminated')">
+      Completed ({{ terminatedCount }})
     </button>
   </div>
-
-  <div class="state" *ngIf="loading">Loading tasks...</div>
-  <div class="state error" *ngIf="error">{{ error }}</div>
 
   <h3 class="section-title">
     {{
@@ -30,7 +27,57 @@
     }}
   </h3>
 
-  <div class="grid" *ngIf="!loading">
+  <div class="toolbar">
+    <div class="filters">
+      <input
+        type="text"
+        placeholder="Search by name, location, crop"
+        [(ngModel)]="searchTerm" />
+
+      <button class="btn-filter" type="button" (click)="clearSearch()">
+        Reset
+      </button>
+    </div>
+
+    <div class="right-tools">
+      <div class="sort-switch">
+        <button
+          type="button"
+          [class.active]="dateSort === 'newest'"
+          (click)="setDateSort('newest')">
+          Newest
+        </button>
+
+        <button
+          type="button"
+          [class.active]="dateSort === 'oldest'"
+          (click)="setDateSort('oldest')">
+          Oldest
+        </button>
+      </div>
+
+      <div class="view-switch">
+        <button
+          type="button"
+          [class.active]="viewMode === 'cards'"
+          (click)="setView('cards')">
+          Cards
+        </button>
+
+        <button
+          type="button"
+          [class.active]="viewMode === 'table'"
+          (click)="setView('table')">
+          Table
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="state" *ngIf="loading">Loading tasks...</div>
+  <div class="state error" *ngIf="error">{{ error }}</div>
+
+  <div class="grid" *ngIf="!loading && viewMode === 'cards'">
     <div class="card" *ngFor="let task of filteredTasks">
       <div class="card-head">
         <div class="loc">{{ task.location }}</div>
@@ -39,7 +86,7 @@
           class="badge"
           [class.planned]="task.status === 'planned'"
           [class.progress]="task.status === 'ongoing'"
-          [class.done]="task.status === 'completed'">
+          [class.done]="task.status === 'terminated'">
           {{ statusLabel(task.status) }}
         </span>
       </div>
@@ -52,7 +99,7 @@
         <div class="row"><span>Water</span><b>{{ task.waterAmount }} L</b></div>
         <div class="row"><span>Debit</span><b>{{ task.debit }}</b></div>
 
-        <div class="progress-section" *ngIf="task.status === 'ongoing' || task.status === 'completed'">
+        <div class="progress-section" *ngIf="task.status === 'ongoing' || task.status === 'terminated'">
           <div class="progress-top">
             <span>Progress</span>
             <b>{{ getProgress(task) }}%</b>
@@ -66,7 +113,7 @@
             <span *ngIf="task.status === 'ongoing'">
               Remaining: {{ getRemainingTime(task) }}
             </span>
-            <span *ngIf="task.status === 'completed'">
+            <span *ngIf="task.status === 'terminated'">
               Finished
             </span>
           </div>
@@ -80,7 +127,7 @@
         <button
           class="icon"
           title="Start Task"
-          *ngIf="task.status !== 'ongoing' && task.status !== 'completed'"
+          *ngIf="task.status !== 'ongoing' && task.status !== 'terminated'"
           (click)="markAsOngoing(task)">
           ▶️
         </button>
@@ -88,16 +135,55 @@
         <button
           class="icon ok"
           title="Complete Task"
-          *ngIf="task.status !== 'completed'"
-          (click)="markAsComplete(task)">
+          *ngIf="task.status !== 'terminated'"
+          (click)="markAsTerminated(task)">
           ✅
         </button>
       </div>
     </div>
 
     <div class="empty" *ngIf="filteredTasks.length === 0">
-      No tasks in this category.
+      No tasks found.
     </div>
+  </div>
+
+  <div class="table-wrapper" *ngIf="!loading && viewMode === 'table'">
+    <table class="tasks-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Location</th>
+          <th>Crop</th>
+          <th>Start Time</th>
+          <th>Duration</th>
+          <th>Water</th>
+          <th>Status</th>
+          <th>Progress</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let task of filteredTasks">
+          <td>{{ task.name }}</td>
+          <td>{{ task.location }}</td>
+          <td>{{ task.crop }}</td>
+          <td>{{ task.startTime }}</td>
+          <td>{{ task.duration }} min</td>
+          <td>{{ task.waterAmount }} L</td>
+          <td>{{ statusLabel(task.status) }}</td>
+          <td>{{ getProgress(task) }}%</td>
+          <td class="actions-cell">
+            <button class="icon" type="button" (click)="editTask(task)">✏️</button>
+            <button class="icon danger" type="button" (click)="deleteTask(task)">🗑️</button>
+          </td>
+        </tr>
+
+        <tr *ngIf="filteredTasks.length === 0">
+          <td colspan="9" class="empty-cell">No tasks found.</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <button class="fab" type="button" (click)="openModal()">+</button>
@@ -117,10 +203,20 @@
 
       <label>
         Location
-        <select formControlName="location">
-          <option *ngFor="let loc of locations" [value]="loc">{{ loc }}</option>
-        </select>
+        <input
+          type="text"
+          formControlName="location"
+          placeholder="Choose location from map" />
       </label>
+
+      <div class="location-actions">
+        <button
+          type="button"
+          class="btn-map"
+          (click)="openMapModal()">
+          Open Map
+        </button>
+      </div>
 
       <label>
         Start Time
@@ -152,7 +248,7 @@
         <select formControlName="status">
           <option value="planned">Planned</option>
           <option value="ongoing">In Progress</option>
-          <option value="completed">Completed</option>
+          <option value="terminated">Completed</option>
         </select>
       </label>
 
@@ -163,5 +259,37 @@
         </button>
       </div>
     </form>
+  </div>
+
+  <div class="map-backdrop" *ngIf="showMapModal"></div>
+
+  <div class="map-modal" *ngIf="showMapModal">
+    <div class="map-modal-header">
+      <h3>Select Location</h3>
+      <button type="button" class="map-close" (click)="closeMapModal()">✕</button>
+    </div>
+
+    <div class="selected-location">
+      <span>Selected:</span>
+      <b>{{ selectedLatLng || 'Click on map to choose location' }}</b>
+    </div>
+
+    <div class="map-container">
+      <div id="task-map-modal"></div>
+    </div>
+
+    <div class="map-actions">
+      <button type="button" class="btn ghost" (click)="closeMapModal()">
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        class="btn primary"
+        [disabled]="!selectedLatLng"
+        (click)="confirmMapLocation()">
+        Confirm Location
+      </button>
+    </div>
   </div>
 </div>

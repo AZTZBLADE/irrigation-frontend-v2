@@ -1,11 +1,15 @@
-import { Injectable, inject, PLATFORM_ID } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
 import { Observable, tap } from 'rxjs';
 
-export type LoginPayload = { email: string; password: string };
+export type LoginPayload = {
+  email: string;
+  password: string;
+};
 
 export type LoginResponse = {
+  id?: number;
   token: string;
   role?: string;
   name?: string;
@@ -25,30 +29,33 @@ export class AuthService {
 
   private api = 'http://localhost:8080/api/users';
 
-  // ========================= LOGIN =========================
   login(payload: LoginPayload): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.api}/login`, payload).pipe(
       tap((res) => {
         if (!res?.token) return;
 
-        // ✅ localStorage only in browser
-        if (!isPlatformBrowser(this.platformId)) return;
+        this.setItem('token', res.token);
 
-        localStorage.setItem('token', res.token);
+        if (res.id !== undefined && res.id !== null) {
+          this.setItem('userId', String(res.id));
+        }
 
-        if (res.role) localStorage.setItem('role', res.role);
-        if (res.name) localStorage.setItem('name', res.name);
-        if (res.email) localStorage.setItem('email', res.email);
+        if (res.role) this.setItem('role', res.role);
+        if (res.name) this.setItem('name', res.name);
+        if (res.email) this.setItem('email', res.email);
       })
     );
   }
 
-  // ========================= REGISTER =========================
   register(payload: RegisterPayload): Observable<any> {
     return this.http.post(`${this.api}/register`, payload);
   }
 
-  // ========================= HELPERS =========================
+  private setItem(key: string, value: string) {
+    if (!isPlatformBrowser(this.platformId)) return;
+    localStorage.setItem(key, value);
+  }
+
   getToken(): string | null {
     if (!isPlatformBrowser(this.platformId)) return null;
     return localStorage.getItem('token');
@@ -59,25 +66,25 @@ export class AuthService {
     return localStorage.getItem('role') || '';
   }
 
-  getName(): string {
-    if (!isPlatformBrowser(this.platformId)) return '';
-    return localStorage.getItem('name') || '';
-  }
+  getUserId(): number | null {
+    if (!isPlatformBrowser(this.platformId)) return null;
 
-  getEmail(): string {
-    if (!isPlatformBrowser(this.platformId)) return '';
-    return localStorage.getItem('email') || '';
+    const value = localStorage.getItem('userId');
+    if (!value) return null;
+
+    const id = Number(value);
+    return Number.isNaN(id) ? null : id;
   }
 
   isLoggedIn(): boolean {
-    const t = this.getToken();
-    return !!t && t.length > 10;
+    return !!this.getToken();
   }
 
   logout() {
     if (!isPlatformBrowser(this.platformId)) return;
 
     localStorage.removeItem('token');
+    localStorage.removeItem('userId');
     localStorage.removeItem('role');
     localStorage.removeItem('name');
     localStorage.removeItem('email');

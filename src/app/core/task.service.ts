@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-export type TaskStatus = 'planned' | 'ongoing' | 'completed';
+export type TaskStatus = 'planned' | 'ongoing' | 'terminated';
 
 export interface Task {
   id?: number;
@@ -13,6 +13,7 @@ export interface Task {
   debit: number;
   startTime: string;
   crop: string;
+  userEmail?: string;
   status?: TaskStatus;
 }
 
@@ -27,10 +28,6 @@ export class TaskService {
     return this.http.get<Task[]>(`${this.api}/all`);
   }
 
-  getTaskById(id: number): Observable<Task> {
-    return this.http.get<Task>(`${this.api}/${id}`);
-  }
-
   createTask(task: Task): Observable<Task> {
     return this.http.post<Task>(`${this.api}/create`, task);
   }
@@ -39,9 +36,9 @@ export class TaskService {
     return this.http.put<Task>(`${this.api}/${id}`, task);
   }
 
-deleteTask(id: number) {
-  return this.http.delete(`http://localhost:8080/api/tasks/${id}`, {
-    responseType: 'text'
-  });
-}
+  deleteTask(id: number): Observable<string> {
+    return this.http.delete(`${this.api}/${id}`, {
+      responseType: 'text',
+    });
+  }
 }

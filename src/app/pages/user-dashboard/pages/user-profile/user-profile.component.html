@@ -1,4 +1,68 @@
-<h2>Profile</h2>
-<p>Name: {{ name }}</p>
-<p>Email: {{ email }}</p>
-<p>Role: {{ role }}</p>
+<div class="profile-page">
+  <div class="profile-layout">
+    <div class="profile-card">
+      <div *ngIf="loading" class="state">Loading profile...</div>
+
+      <ng-container *ngIf="!loading">
+        <div class="avatar">{{ userInitial }}</div>
+
+        <h2>{{ form.get('name')?.value || 'User' }}</h2>
+        <p class="role">{{ profile?.role || 'ROLE_USER' }}</p>
+
+        <div class="info-list">
+          <div class="info-row">
+            <span>Email</span>
+            <b>{{ form.get('email')?.value || '-' }}</b>
+          </div>
+
+          <div class="info-row">
+            <span>User ID</span>
+            <b>{{ profile?.id || userId || '-' }}</b>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+    <div class="edit-card">
+      <div class="card-title">Edit Profile</div>
+
+      <div class="state error" *ngIf="error">{{ error }}</div>
+      <div class="state success" *ngIf="success">{{ success }}</div>
+
+      <form [formGroup]="form" (ngSubmit)="saveProfile()" class="profile-form">
+        <label>
+          Full Name
+          <input type="text" formControlName="name" placeholder="Your full name" />
+        </label>
+
+        <label>
+          Email
+          <input type="email" formControlName="email" placeholder="your@email.com" />
+        </label>
+
+        <label>
+          New Password
+          <input
+            type="password"
+            formControlName="password"
+            placeholder="Leave empty if you don't want to change it" />
+        </label>
+
+        <div class="actions">
+          <button type="submit" class="btn primary" [disabled]="saving">
+            {{ saving ? 'Saving...' : 'Update Profile' }}
+          </button>
+        </div>
+      </form>
+
+      <div class="danger-zone">
+        <div class="danger-title">Danger Zone</div>
+        <p>Deleting your account is permanent.</p>
+
+        <button type="button" class="btn danger" (click)="deleteAccount()">
+          Delete Account
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
