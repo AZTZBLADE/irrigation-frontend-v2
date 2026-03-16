@@ -1,6 +1,15 @@
 <div class="tasks-page">
   <div class="head">
-    <h2>Tasks</h2>
+    <h2>Smart Irrigation Tasks</h2>
+    <p class="subtitle">Weather-aware planning and AI recommendations</p>
+  </div>
+
+  <div class="global-ai-card" *ngIf="globalInsights">
+    <div class="global-ai-icon">🤖</div>
+    <div class="global-ai-content">
+      <h3>Automated Insights</h3>
+      <p>{{ globalInsights?.aiAdvice || globalInsights?.message || 'AI insights available.' }}</p>
+    </div>
   </div>
 
   <div class="tabs">
@@ -17,21 +26,11 @@
     </button>
   </div>
 
-  <h3 class="section-title">
-    {{
-      activeTab === 'planned'
-        ? 'Planned Tasks'
-        : activeTab === 'ongoing'
-        ? 'In Progress Tasks'
-        : 'Completed Tasks'
-    }}
-  </h3>
-
   <div class="toolbar">
     <div class="filters">
       <input
         type="text"
-        placeholder="Search by name, location, crop"
+        placeholder="Search by task, crop, location"
         [(ngModel)]="searchTerm" />
 
       <button class="btn-filter" type="button" (click)="clearSearch()">
@@ -77,67 +76,112 @@
   <div class="state" *ngIf="loading">Loading tasks...</div>
   <div class="state error" *ngIf="error">{{ error }}</div>
 
-  <div class="grid" *ngIf="!loading && viewMode === 'cards'">
-    <div class="card" *ngFor="let task of filteredTasks">
-      <div class="card-head">
-        <div class="loc">{{ task.location }}</div>
-
-        <span
-          class="badge"
-          [class.planned]="task.status === 'planned'"
-          [class.progress]="task.status === 'ongoing'"
-          [class.done]="task.status === 'terminated'">
-          {{ statusLabel(task.status) }}
-        </span>
-      </div>
-
-      <div class="body">
-        <div class="row"><span>Task</span><b>{{ task.name }}</b></div>
-        <div class="row"><span>Start Time</span><b>{{ task.startTime }}</b></div>
-        <div class="row"><span>Duration</span><b>{{ task.duration }} min</b></div>
-        <div class="row"><span>Crop</span><b>{{ task.crop }}</b></div>
-        <div class="row"><span>Water</span><b>{{ task.waterAmount }} L</b></div>
-        <div class="row"><span>Debit</span><b>{{ task.debit }}</b></div>
-
-        <div class="progress-section" *ngIf="task.status === 'ongoing' || task.status === 'terminated'">
-          <div class="progress-top">
-            <span>Progress</span>
-            <b>{{ getProgress(task) }}%</b>
+  <div class="task-grid" *ngIf="!loading && viewMode === 'cards'">
+    <div class="task-card" *ngFor="let task of filteredTasks">
+      <div class="task-card-header">
+        <div>
+          <h3>{{ task.name }}</h3>
+          <div class="task-meta">
+            <span>📍 {{ task.location }}</span>
+            <span>🌿 {{ task.crop }}</span>
+            <span>📐 {{ task.surface || 0 }} m²</span>
           </div>
+        </div>
 
-          <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="getProgress(task)"></div>
-          </div>
-
-          <div class="timer-line">
-            <span *ngIf="task.status === 'ongoing'">
-              Remaining: {{ getRemainingTime(task) }}
-            </span>
-            <span *ngIf="task.status === 'terminated'">
-              Finished
-            </span>
-          </div>
+        <div class="header-actions">
+          <span
+            class="status-chip"
+            [class.planned]="task.status === 'planned'"
+            [class.ongoing]="task.status === 'ongoing'"
+            [class.done]="task.status === 'terminated'">
+            {{ statusLabel(task.status) }}
+          </span>
         </div>
       </div>
 
-      <div class="actions">
-        <button class="icon" title="Edit" (click)="editTask(task)">✏️</button>
-        <button class="icon danger" title="Delete" (click)="deleteTask(task)">🗑️</button>
+      <div class="sensor-grid" *ngIf="getInsight(task.id) as insight">
+        <div class="sensor-box">
+          <div class="sensor-label">Temperature</div>
+          <div class="sensor-value">{{ insight.weather.temperature }}°C</div>
+        </div>
+
+        <div class="sensor-box">
+          <div class="sensor-label">Humidity</div>
+          <div class="sensor-value">{{ insight.weather.humidity }}%</div>
+        </div>
+
+        <div class="sensor-box">
+          <div class="sensor-label">Rain Probability</div>
+          <div class="sensor-value">{{ insight.weather.rainProbability }}%</div>
+        </div>
+      </div>
+
+      <div class="task-body">
+        <div class="task-row">
+          <span>Start Time</span>
+          <b>{{ task.startTime }}</b>
+        </div>
+
+        <div class="task-row">
+          <span>Duration</span>
+          <b>{{ task.duration }} min</b>
+        </div>
+
+        <div class="task-row">
+          <span>Water Amount</span>
+          <b>{{ task.waterAmount }} L</b>
+        </div>
+
+        <div class="task-row">
+          <span>Debit</span>
+          <b>{{ task.debit }}</b>
+        </div>
+      </div>
+
+      <div class="ai-card" *ngIf="getInsight(task.id) as insight">
+        <div class="ai-title">AI Advice</div>
+        <p>{{ insight.aiAdvice }}</p>
+        <small>
+          {{ insight.weather.cityName }} · {{ insight.weather.description }}
+        </small>
+      </div>
+
+      <div class="progress-section" *ngIf="task.status === 'ongoing' || task.status === 'terminated'">
+        <div class="progress-top">
+          <span>Progress</span>
+          <b>{{ getProgress(task) }}%</b>
+        </div>
+
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="getProgress(task)"></div>
+        </div>
+
+        <div class="timer-line">
+          <span *ngIf="task.status === 'ongoing'">
+            Remaining: {{ getRemainingTime(task) }}
+          </span>
+          <span *ngIf="task.status === 'terminated'">
+            Finished
+          </span>
+        </div>
+      </div>
+
+      <div class="task-card-actions">
+        <button class="mini-btn edit" (click)="editTask(task)">✏ Edit</button>
+        <button class="mini-btn delete" (click)="deleteTask(task)">🗑 Delete</button>
 
         <button
-          class="icon"
-          title="Start Task"
+          class="mini-btn start"
           *ngIf="task.status !== 'ongoing' && task.status !== 'terminated'"
           (click)="markAsOngoing(task)">
-          ▶️
+          ▶ Start
         </button>
 
         <button
-          class="icon ok"
-          title="Complete Task"
+          class="mini-btn complete"
           *ngIf="task.status !== 'terminated'"
           (click)="markAsTerminated(task)">
-          ✅
+          ✅ Complete
         </button>
       </div>
     </div>
@@ -153,13 +197,12 @@
         <tr>
           <th>Name</th>
           <th>Location</th>
+          <th>Surface</th>
           <th>Crop</th>
           <th>Start Time</th>
           <th>Duration</th>
-          <th>Water</th>
+          <th>Weather</th>
           <th>Status</th>
-          <th>Progress</th>
-          <th>Actions</th>
         </tr>
       </thead>
 
@@ -167,20 +210,20 @@
         <tr *ngFor="let task of filteredTasks">
           <td>{{ task.name }}</td>
           <td>{{ task.location }}</td>
+          <td>{{ task.surface || 0 }} m²</td>
           <td>{{ task.crop }}</td>
           <td>{{ task.startTime }}</td>
           <td>{{ task.duration }} min</td>
-          <td>{{ task.waterAmount }} L</td>
-          <td>{{ statusLabel(task.status) }}</td>
-          <td>{{ getProgress(task) }}%</td>
-          <td class="actions-cell">
-            <button class="icon" type="button" (click)="editTask(task)">✏️</button>
-            <button class="icon danger" type="button" (click)="deleteTask(task)">🗑️</button>
+          <td>
+            <ng-container *ngIf="getInsight(task.id) as insight">
+              {{ insight.weather.temperature }}°C / {{ insight.weather.humidity }}%
+            </ng-container>
           </td>
+          <td>{{ statusLabel(task.status) }}</td>
         </tr>
 
         <tr *ngIf="filteredTasks.length === 0">
-          <td colspan="9" class="empty-cell">No tasks found.</td>
+          <td colspan="8" class="empty-cell">No tasks found.</td>
         </tr>
       </tbody>
     </table>
@@ -198,7 +241,7 @@
     <form class="form" [formGroup]="form" (ngSubmit)="submit()">
       <label>
         Task Name
-        <input type="text" formControlName="name" placeholder="Irrigation Secteur Nord" />
+        <input type="text" formControlName="name" placeholder="Irrigation Sector North" />
       </label>
 
       <label>
@@ -210,13 +253,15 @@
       </label>
 
       <div class="location-actions">
-        <button
-          type="button"
-          class="btn-map"
-          (click)="openMapModal()">
+        <button type="button" class="btn-map" (click)="openMapModal()">
           Open Map
         </button>
       </div>
+
+      <label>
+        Surface (m²)
+        <input type="number" formControlName="surface" placeholder="120" />
+      </label>
 
       <label>
         Start Time
@@ -230,7 +275,7 @@
 
       <label>
         Crop
-        <input type="text" formControlName="crop" placeholder="Pommes de terre" />
+        <input type="text" formControlName="crop" placeholder="Potatoes" />
       </label>
 
       <label>

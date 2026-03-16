@@ -12,7 +12,12 @@ import {
   Validators,
   FormsModule,
 } from '@angular/forms';
-import { TaskService, Task, TaskStatus } from '../../../../core/task.service';
+import {
+  TaskService,
+  Task,
+  TaskStatus,
+  WeatherTaskInsight,
+} from '../../../../core/task.service';
 
 type UiTab = 'planned' | 'ongoing' | 'terminated';
 type ViewMode = 'cards' | 'table';
@@ -37,6 +42,8 @@ export class UserTasksComponent implements OnInit, OnDestroy {
   error = '';
 
   tasks: Task[] = [];
+  insightsMap: Record<number, WeatherTaskInsight> = {};
+  globalInsights: any = null;
 
   activeTab: UiTab = 'planned';
   viewMode: ViewMode = 'cards';
@@ -56,6 +63,7 @@ export class UserTasksComponent implements OnInit, OnDestroy {
   form = this.fb.group({
     name: ['', Validators.required],
     location: ['', Validators.required],
+    surface: [0, [Validators.required, Validators.min(0)]],
     startTime: ['', Validators.required],
     duration: [60, [Validators.required, Validators.min(1)]],
     crop: ['', Validators.required],
@@ -71,6 +79,7 @@ export class UserTasksComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadTasks();
+    this.loadGlobalInsights();
 
     this.intervalId = setInterval(() => {
       this.syncTasksWithTime();
@@ -94,16 +103,50 @@ export class UserTasksComponent implements OnInit, OnDestroy {
       next: (data) => {
         this.tasks = (data || []).map((task) => ({
           ...task,
+          surface: Number(task.surface || 0),
           status: (task.status || 'planned') as TaskStatus,
         }));
+
         this.loading = false;
         this.syncTasksWithTime();
+        this.loadInsightsForTasks();
       },
       error: () => {
         this.error = 'Failed to load tasks';
         this.loading = false;
       },
     });
+  }
+
+  loadInsightsForTasks(): void {
+    this.tasks.forEach((task) => {
+      if (!task.id) return;
+
+      this.taskService.getTaskWeatherInsight(task.id).subscribe({
+        next: (res) => {
+          this.insightsMap[task.id!] = res;
+        },
+        error: () => {
+          // نخليها silent
+        },
+      });
+    });
+  }
+
+  loadGlobalInsights(): void {
+    this.taskService.getAutomatedInsights().subscribe({
+      next: (res) => {
+        this.globalInsights = res;
+      },
+      error: () => {
+        this.globalInsights = null;
+      },
+    });
+  }
+
+  getInsight(taskId?: number): WeatherTaskInsight | null {
+    if (!taskId) return null;
+    return this.insightsMap[taskId] || null;
   }
 
   setTab(tab: UiTab): void {
@@ -164,6 +207,7 @@ export class UserTasksComponent implements OnInit, OnDestroy {
     this.form.reset({
       name: '',
       location: '',
+      surface: 0,
       startTime: '',
       duration: 60,
       crop: '',
@@ -188,6 +232,7 @@ export class UserTasksComponent implements OnInit, OnDestroy {
     this.form.patchValue({
       name: task.name,
       location: task.location,
+      surface: Number(task.surface || 0),
       startTime: task.startTime?.slice(0, 16),
       duration: task.duration,
       crop: task.crop,
@@ -211,6 +256,7 @@ export class UserTasksComponent implements OnInit, OnDestroy {
     const payload: Task = {
       name: raw.name || '',
       location: raw.location || '',
+      surface: Number(raw.surface || 0),
       startTime: raw.startTime || '',
       duration: Number(raw.duration || 0),
       crop: raw.crop || '',
@@ -253,6 +299,7 @@ export class UserTasksComponent implements OnInit, OnDestroy {
     this.taskService.deleteTask(task.id).subscribe({
       next: () => {
         this.tasks = this.tasks.filter((t) => t.id !== task.id);
+        delete this.insightsMap[task.id!];
       },
       error: () => {
         this.error = 'Delete failed';
@@ -316,7 +363,7 @@ export class UserTasksComponent implements OnInit, OnDestroy {
             this.map.invalidateSize();
           }
           this.loadMapFromExistingLocation();
-        }, 200);
+        }, 400);
       }, 100);
     }
   }
@@ -351,20 +398,17 @@ export class UserTasksComponent implements OnInit, OnDestroy {
 
     if (this.map) {
       this.map.remove();
+      this.map = null;
     }
 
-    this.map = this.L.map('task-map-modal').setView([36.8065, 10.1815], 13);
+    this.map = this.L.map('task-map-modal', {
+      center: [36.8065, 10.1815],
+      zoom: 13,
+    });
 
-    this.L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      {
-        attribution: '&copy; OpenStreetMap contributors',
-      }
-    ).addTo(this.map);
-
-    setTimeout(() => {
-      this.map.invalidateSize();
-    }, 200);
+    this.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(this.map);
 
     this.map.on('click', (e: any) => {
       const lat = e.latlng.lat;
@@ -375,10 +419,14 @@ export class UserTasksComponent implements OnInit, OnDestroy {
       }
 
       this.marker = this.L.marker([lat, lng]).addTo(this.map);
-
       this.selectedLatLng = `${lat.toFixed(6)},${lng.toFixed(6)}`;
-      console.log('MAP CLICK', this.selectedLatLng);
     });
+
+    setTimeout(() => {
+      if (this.map) {
+        this.map.invalidateSize();
+      }
+    }, 300);
   }
 
   loadMapFromExistingLocation(): void {
