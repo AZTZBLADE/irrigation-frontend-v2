@@ -1,170 +1,91 @@
-<div class="dash">
+<div class="admin-dashboard">
+  <div class="hero">
+    <div>
+      <h1>Admin Dashboard</h1>
+      <p>Manage users, irrigation tasks, and platform activity</p>
+    </div>
 
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="side-brand">
-      <div class="side-logo">🌿</div>
-      <div class="side-title">
-        <div class="name">Irrigation</div>
-        <div class="sub">Admin Panel</div>
+    <div class="hero-actions">
+      <a routerLink="/admin/users" class="hero-btn">Manage Users</a>
+      <a routerLink="/admin/tasks" class="hero-btn secondary">View All Tasks</a>
+    </div>
+  </div>
+
+  <div class="state" *ngIf="loading">Loading dashboard...</div>
+  <div class="state error" *ngIf="error">{{ error }}</div>
+
+  <div class="stats-grid" *ngIf="!loading">
+    <div class="stat-card">
+      <span>Total Users</span>
+      <strong>{{ totalUsers }}</strong>
+    </div>
+
+    <div class="stat-card">
+      <span>Total Tasks</span>
+      <strong>{{ totalTasks }}</strong>
+    </div>
+
+    <div class="stat-card">
+      <span>Planned Tasks</span>
+      <strong>{{ plannedTasks }}</strong>
+    </div>
+
+    <div class="stat-card">
+      <span>Ongoing Tasks</span>
+      <strong>{{ ongoingTasks }}</strong>
+    </div>
+
+    <div class="stat-card">
+      <span>Completed Tasks</span>
+      <strong>{{ completedTasks }}</strong>
+    </div>
+  </div>
+
+  <div class="content-grid" *ngIf="!loading">
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Recent Users</h3>
+        <a routerLink="/admin/users">See all</a>
+      </div>
+
+      <div class="mini-table">
+        <div class="mini-row header">
+          <span>Name</span>
+          <span>Email</span>
+          <span>Role</span>
+        </div>
+
+        <div class="mini-row" *ngFor="let user of recentUsers">
+          <span>{{ user.name }}</span>
+          <span>{{ user.email }}</span>
+          <span>{{ roleLabel(user) }}</span>
+        </div>
+
+        <div class="empty" *ngIf="recentUsers.length === 0">No users found.</div>
       </div>
     </div>
 
-    <nav class="menu">
-      <a class="item"
-         routerLink="/admin"
-         routerLinkActive="active"
-         [routerLinkActiveOptions]="{ exact: true }">
-        Dashboard
-      </a>
-
-      <a class="item"
-         routerLink="/admin/users"
-         routerLinkActive="active">
-        Users
-      </a>
-
-      <a class="item"
-         routerLink="/admin/farms"
-         routerLinkActive="active">
-        Farms
-      </a>
-
-      <a class="item"
-         routerLink="/admin/parcels"
-         routerLinkActive="active">
-        Parcels
-      </a>
-
-      <a class="item"
-         routerLink="/admin/tasks"
-         routerLinkActive="active">
-        Tasks
-      </a>
-
-      <a class="item"
-         routerLink="/admin/reports"
-         routerLinkActive="active">
-        Reports
-      </a>
-
-      <div class="sep"></div>
-
-      <a class="item danger" (click)="logout()">
-        Logout
-      </a>
-    </nav>
-  </aside>
-
-  <!-- Main Content -->
-  <main class="main">
-
-    <!-- Header -->
-    <header class="topbar">
-      <div class="greeting">
-        <h1>Dashboard</h1>
-        <p>Overview of platform activity and performance.</p>
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Recent Tasks</h3>
+        <a routerLink="/admin/tasks">See all</a>
       </div>
 
-      <div class="chip">Admin</div>
-    </header>
-
-    <!-- KPI Cards -->
-    <section class="kpis">
-      <div class="kpi" *ngFor="let k of kpis">
-        <div class="kpi__title">{{ k.title }}</div>
-        <div class="kpi__value">{{ k.value }}</div>
-        <div class="kpi__hint">{{ k.hint }}</div>
-      </div>
-    </section>
-
-    <!-- Charts & Metrics -->
-    <section class="grid">
-
-      <!-- Chart -->
-      <div class="panel">
-        <div class="panel__head">
-          <h2>Weekly Water Usage</h2>
-          <span class="tag green">Trend</span>
+      <div class="mini-table">
+        <div class="mini-row header tasks">
+          <span>Task</span>
+          <span>User</span>
+          <span>Status</span>
         </div>
 
-        <div class="chart">
-          <svg viewBox="0 0 560 160" preserveAspectRatio="none">
-            <polyline class="line" [attr.points]="linePoints()"></polyline>
-          </svg>
-
-          <div class="xlabels">
-            <span *ngFor="let p of weeklyWater">{{ p.d }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Metrics -->
-      <div class="panel">
-        <div class="panel__head">
-          <h2>Key Metrics</h2>
-          <span class="tag">Live</span>
+        <div class="mini-row tasks" *ngFor="let task of recentTasks">
+          <span>{{ task.name }}</span>
+          <span>{{ task.userEmail || '-' }}</span>
+          <span>{{ statusLabel(task.status) }}</span>
         </div>
 
-        <div class="metric" *ngFor="let s of stats">
-          <div class="metric__top">
-            <div class="metric__label">{{ s.label }}</div>
-            <div class="metric__value">{{ s.value }}%</div>
-          </div>
-
-          <div class="bar">
-            <div class="bar__fill" [style.width.%]="s.value"></div>
-          </div>
-        </div>
-
-        <div class="small-note">
-          Demo values for now. We will connect them to the backend later.
-        </div>
+        <div class="empty" *ngIf="recentTasks.length === 0">No tasks found.</div>
       </div>
-
-    </section>
-
-    <!-- Users Table -->
-    <section class="panel table">
-      <div class="panel__head">
-        <h2>Recent Users</h2>
-        <span class="tag green">New</span>
-      </div>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr *ngFor="let u of recentUsers">
-              <td class="name">
-                <span class="avatar">{{ u.name[0] }}</span>
-                <span>{{ u.name }}</span>
-              </td>
-
-              <td class="muted">{{ u.email }}</td>
-
-              <td>
-                <span class="pill">{{ u.role }}</span>
-              </td>
-
-              <td>
-                <span class="status" [class.pending]="u.status === 'Pending'">
-                  {{ u.status }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-  </main>
+    </div>
+  </div>
 </div>

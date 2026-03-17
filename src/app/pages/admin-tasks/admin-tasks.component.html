@@ -1,0 +1,54 @@
+<div class="admin-page">
+  <div class="page-head">
+    <div>
+      <h2>All Users Tasks</h2>
+      <p>Admin can monitor all irrigation tasks created by every user</p>
+    </div>
+
+    <input
+      type="text"
+      [(ngModel)]="searchTerm"
+      placeholder="Search by task, user email, crop, location" />
+  </div>
+
+  <div class="state" *ngIf="loading">Loading tasks...</div>
+  <div class="state error" *ngIf="error">{{ error }}</div>
+
+  <div class="table-card" *ngIf="!loading">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Task</th>
+          <th>User</th>
+          <th>Location</th>
+          <th>Crop</th>
+          <th>Surface</th>
+          <th>Start Time</th>
+          <th>Duration</th>
+          <th>Water</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let task of filteredTasks">
+          <td>{{ task.id }}</td>
+          <td>{{ task.name }}</td>
+          <td>{{ task.userEmail || '-' }}</td>
+          <td>{{ task.location }}</td>
+          <td>{{ task.crop }}</td>
+          <td>{{ task.surface || 0 }} m²</td>
+          <td>{{ task.startTime }}</td>
+          <td>{{ task.duration }} min</td>
+          <td>{{ task.waterAmount }} L</td>
+          <td>{{ statusLabel(task.status) }}</td>
+        </tr>
+
+        <tr *ngIf="filteredTasks.length === 0">
+          <td colspan="10" class="empty-cell">No tasks found.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,46 @@
+<div class="admin-page">
+  <div class="page-head">
+    <div>
+      <h2>Users Management</h2>
+      <p>View all users and remove accounts</p>
+    </div>
+
+    <input
+      type="text"
+      [(ngModel)]="searchTerm"
+      placeholder="Search by name, email, role" />
+  </div>
+
+  <div class="state" *ngIf="loading">Loading users...</div>
+  <div class="state error" *ngIf="error">{{ error }}</div>
+
+  <div class="table-card" *ngIf="!loading">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let user of filteredUsers">
+          <td>{{ user.id }}</td>
+          <td>{{ user.name }}</td>
+          <td>{{ user.email }}</td>
+          <td>{{ roleLabel(user) }}</td>
+          <td>
+            <button class="danger-btn" (click)="deleteUser(user)">Delete</button>
+          </td>
+        </tr>
+
+        <tr *ngIf="filteredUsers.length === 0">
+          <td colspan="5" class="empty-cell">No users found.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

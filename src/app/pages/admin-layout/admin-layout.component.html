@@ -1,0 +1,40 @@
+<div class="admin-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      🌿 Smart Irrigation
+    </div>
+
+    <nav class="menu">
+      <a
+        routerLink="/admin/dashboard"
+        routerLinkActive="active"
+        class="menu-item">
+        📊 Dashboard
+      </a>
+
+      <a
+        routerLink="/admin/users"
+        routerLinkActive="active"
+        class="menu-item">
+        👥 Users
+      </a>
+
+      <a
+        routerLink="/admin/tasks"
+        routerLinkActive="active"
+        class="menu-item">
+        🚜 Tasks
+      </a>
+    </nav>
+
+    <button class="logout-btn" (click)="logout()">
+      🚪 Logout
+    </button>
+  </aside>
+
+  <!-- Main content -->
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

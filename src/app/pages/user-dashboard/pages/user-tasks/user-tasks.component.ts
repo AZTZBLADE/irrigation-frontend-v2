@@ -111,7 +111,8 @@ export class UserTasksComponent implements OnInit, OnDestroy {
         this.syncTasksWithTime();
         this.loadInsightsForTasks();
       },
-      error: () => {
+      error: (err) => {
+        console.error(err);
         this.error = 'Failed to load tasks';
         this.loading = false;
       },
@@ -126,9 +127,7 @@ export class UserTasksComponent implements OnInit, OnDestroy {
         next: (res) => {
           this.insightsMap[task.id!] = res;
         },
-        error: () => {
-          // نخليها silent
-        },
+        error: () => {},
       });
     });
   }
@@ -272,7 +271,8 @@ export class UserTasksComponent implements OnInit, OnDestroy {
           this.closeModal();
           this.loadTasks();
         },
-        error: () => {
+        error: (err) => {
+          console.error(err);
           this.error = 'Update failed';
           this.loading = false;
         },
@@ -284,7 +284,8 @@ export class UserTasksComponent implements OnInit, OnDestroy {
           this.closeModal();
           this.loadTasks();
         },
-        error: () => {
+        error: (err) => {
+          console.error(err);
           this.error = 'Create failed';
           this.loading = false;
         },
@@ -301,7 +302,8 @@ export class UserTasksComponent implements OnInit, OnDestroy {
         this.tasks = this.tasks.filter((t) => t.id !== task.id);
         delete this.insightsMap[task.id!];
       },
-      error: () => {
+      error: (err) => {
+        console.error(err);
         this.error = 'Delete failed';
       },
     });

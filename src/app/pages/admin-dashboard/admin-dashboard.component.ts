@@ -1,71 +1,92 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
-
-type Kpi = { title: string; value: string; hint: string };
-type UserRow = { name: string; email: string; role: string; status: 'Active' | 'Pending' };
-type DayPoint = { d: string; v: number };
+import { RouterLink } from '@angular/router';
+import { AdminService, AdminTask, AdminUser } from '../../core/admin.service';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.scss',
 })
-export class AdminDashboardComponent {
+export class AdminDashboardComponent implements OnInit {
+  loading = false;
+  error = '';
 
-  constructor(private router: Router) {}
+  users: AdminUser[] = [];
+  tasks: AdminTask[] = [];
 
-  logout() {
-    localStorage.removeItem('token');
-    this.router.navigateByUrl('/login');
+  constructor(private adminService: AdminService) {}
+
+  ngOnInit(): void {
+    this.loadDashboard();
   }
 
-  kpis: Kpi[] = [
-    { title: 'Total Users', value: '128', hint: '+12 this month' },
-    { title: 'Farms', value: '34', hint: '+3 this week' },
-    { title: 'Parcels', value: '96', hint: 'Across all farms' },
-    { title: 'Irrigation Tasks', value: '412', hint: 'Last 30 days' },
-  ];
+  loadDashboard(): void {
+    this.loading = true;
+    this.error = '';
 
-  weeklyWater: DayPoint[] = [
-    { d: 'Mon', v: 42 },
-    { d: 'Tue', v: 55 },
-    { d: 'Wed', v: 49 },
-    { d: 'Thu', v: 62 },
-    { d: 'Fri', v: 58 },
-    { d: 'Sat', v: 70 },
-    { d: 'Sun', v: 64 },
-  ];
+    this.adminService.getAllUsers().subscribe({
+      next: (users) => {
+        this.users = users || [];
 
-  recentUsers: UserRow[] = [
-    { name: 'Aziz Rtibi', email: 'aziz@email.com', role: 'ADMIN', status: 'Active' },
-    { name: 'Amine Ben Ali', email: 'amine@email.com', role: 'FARMER', status: 'Active' },
-    { name: 'Sarra Jaziri', email: 'sarra@email.com', role: 'FARMER', status: 'Pending' },
-    { name: 'Yassine Khemiri', email: 'yassine@email.com', role: 'FARMER', status: 'Active' },
-  ];
-
-  stats = [
-    { label: 'Irrigation Success Rate', value: 92 },
-    { label: 'Water Saving (avg)', value: 18 },
-    { label: 'Tasks Completed', value: 74 },
-  ];
-
-  get maxV() {
-    return Math.max(...this.weeklyWater.map(x => x.v));
+        this.adminService.getAllTasks().subscribe({
+          next: (tasks) => {
+            this.tasks = tasks || [];
+            this.loading = false;
+          },
+          error: (err) => {
+            console.error(err);
+            this.error = 'Failed to load tasks.';
+            this.loading = false;
+          },
+        });
+      },
+      error: (err) => {
+        console.error(err);
+        this.error = 'Failed to load users.';
+        this.loading = false;
+      },
+    });
   }
 
-  linePoints(width = 560, height = 160, pad = 16): string {
-    const w = width - pad * 2;
-    const h = height - pad * 2;
+  get totalUsers(): number {
+    return this.users.length;
+  }
 
-    return this.weeklyWater
-      .map((p, i) => {
-        const x = pad + (i * w) / (this.weeklyWater.length - 1);
-        const y = pad + (1 - p.v / this.maxV) * h;
-        return `${x},${y}`;
-      })
-      .join(' ');
+  get totalTasks(): number {
+    return this.tasks.length;
+  }
+
+  get plannedTasks(): number {
+    return this.tasks.filter((t) => (t.status || 'planned') === 'planned').length;
+  }
+
+  get ongoingTasks(): number {
+    return this.tasks.filter((t) => (t.status || 'planned') === 'ongoing').length;
+  }
+
+  get completedTasks(): number {
+    return this.tasks.filter((t) => (t.status || 'planned') === 'terminated').length;
+  }
+
+  get recentUsers(): AdminUser[] {
+    return this.users.slice(0, 5);
+  }
+
+  get recentTasks(): AdminTask[] {
+    return this.tasks.slice(0, 5);
+  }
+
+  roleLabel(user: AdminUser): string {
+    if (typeof user.role === 'string') return user.role;
+    return user.role?.name || 'ROLE_USER';
+  }
+
+  statusLabel(status?: string): string {
+    if (status === 'terminated') return 'Completed';
+    if (status === 'ongoing') return 'In Progress';
+    return 'Planned';
   }
 }

@@ -1,7 +1,12 @@
 import { Routes } from '@angular/router';
+
 import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
+
+import { AdminLayoutComponent } from './pages/admin-layout/admin-layout.component';
 import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard.component';
+import { AdminUsersComponent } from './pages/admin-users/admin-users.component';
+import { AdminTasksComponent } from './pages/admin-tasks/admin-tasks.component';
 
 import { UserDashboardComponent } from './pages/user-dashboard/user-dashboard.component';
 import { UserTasksComponent } from './pages/user-dashboard/pages/user-tasks/user-tasks.component';
@@ -16,19 +21,25 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
 
-  // Admin
+  // Admin Layout + Pages
   {
     path: 'admin',
-    component: AdminDashboardComponent,
+    component: AdminLayoutComponent,
     canActivate: [authGuard],
+    children: [
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'dashboard', component: AdminDashboardComponent },
+      { path: 'users', component: AdminUsersComponent },
+      { path: 'tasks', component: AdminTasksComponent },
+    ],
   },
 
-  // User Dashboard (Layout + children)
+  // User Dashboard
   {
     path: 'user',
     component: UserDashboardComponent,
     canActivate: [authGuard],
-    canActivateChild: [authGuard], // ✅ مهم لحماية /user/* routes
+    canActivateChild: [authGuard],
     children: [
       { path: '', redirectTo: 'tasks', pathMatch: 'full' },
       { path: 'tasks', component: UserTasksComponent },

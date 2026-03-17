@@ -77,108 +77,124 @@
   <div class="state error" *ngIf="error">{{ error }}</div>
 
   <div class="task-grid" *ngIf="!loading && viewMode === 'cards'">
-    <div class="task-card" *ngFor="let task of filteredTasks">
-      <div class="task-card-header">
-        <div>
-          <h3>{{ task.name }}</h3>
-          <div class="task-meta">
-            <span>📍 {{ task.location }}</span>
-            <span>🌿 {{ task.crop }}</span>
-            <span>📐 {{ task.surface || 0 }} m²</span>
+    <div class="task-card pro-card" *ngFor="let task of filteredTasks">
+      <div class="task-top">
+        <div class="task-main-info">
+          <div class="task-name">{{ task.name }}</div>
+
+          <div class="task-tags">
+            <span class="tag location">📍 {{ task.location }}</span>
+            <span class="tag crop">🌿 {{ task.crop }}</span>
+            <span class="tag surface">📐 {{ task.surface || 0 }} m²</span>
           </div>
         </div>
 
-        <div class="header-actions">
-          <span
-            class="status-chip"
-            [class.planned]="task.status === 'planned'"
-            [class.ongoing]="task.status === 'ongoing'"
-            [class.done]="task.status === 'terminated'">
-            {{ statusLabel(task.status) }}
-          </span>
+        <div
+          class="status-badge"
+          [class.planned]="task.status === 'planned'"
+          [class.ongoing]="task.status === 'ongoing'"
+          [class.done]="task.status === 'terminated'">
+          {{ statusLabel(task.status) }}
         </div>
       </div>
 
-      <div class="sensor-grid" *ngIf="getInsight(task.id) as insight">
-        <div class="sensor-box">
-          <div class="sensor-label">Temperature</div>
-          <div class="sensor-value">{{ insight.weather.temperature }}°C</div>
+      <div class="task-divider"></div>
+
+      <div class="weather-cards" *ngIf="getInsight(task.id) as insight">
+        <div class="weather-card temperature">
+          <div class="icon-box">🌡</div>
+          <div class="metric-content">
+            <span>Temperature</span>
+            <strong>{{ insight.weather.temperature }}°C</strong>
+          </div>
         </div>
 
-        <div class="sensor-box">
-          <div class="sensor-label">Humidity</div>
-          <div class="sensor-value">{{ insight.weather.humidity }}%</div>
+        <div class="weather-card humidity">
+          <div class="icon-box">💧</div>
+          <div class="metric-content">
+            <span>Humidity</span>
+            <strong>{{ insight.weather.humidity }}%</strong>
+          </div>
         </div>
 
-        <div class="sensor-box">
-          <div class="sensor-label">Rain Probability</div>
-          <div class="sensor-value">{{ insight.weather.rainProbability }}%</div>
+        <div class="weather-card rain">
+          <div class="icon-box">🌧</div>
+          <div class="metric-content">
+            <span>Rain</span>
+            <strong>{{ insight.weather.rainProbability }}%</strong>
+          </div>
         </div>
       </div>
 
-      <div class="task-body">
-        <div class="task-row">
+      <div class="task-details">
+        <div class="detail-item">
           <span>Start Time</span>
           <b>{{ task.startTime }}</b>
         </div>
 
-        <div class="task-row">
+        <div class="detail-item">
           <span>Duration</span>
           <b>{{ task.duration }} min</b>
         </div>
 
-        <div class="task-row">
-          <span>Water Amount</span>
+        <div class="detail-item">
+          <span>Water</span>
           <b>{{ task.waterAmount }} L</b>
         </div>
 
-        <div class="task-row">
+        <div class="detail-item">
           <span>Debit</span>
           <b>{{ task.debit }}</b>
         </div>
       </div>
 
-      <div class="ai-card" *ngIf="getInsight(task.id) as insight">
-        <div class="ai-title">AI Advice</div>
+      <div class="ai-box" *ngIf="getInsight(task.id) as insight">
+        <div class="ai-header">
+          <span class="ai-chip">AI Advice</span>
+          <small>{{ insight.weather.cityName }} · {{ insight.weather.description }}</small>
+        </div>
+
         <p>{{ insight.aiAdvice }}</p>
-        <small>
-          {{ insight.weather.cityName }} · {{ insight.weather.description }}
-        </small>
       </div>
 
-      <div class="progress-section" *ngIf="task.status === 'ongoing' || task.status === 'terminated'">
-        <div class="progress-top">
+      <div
+        class="progress-box"
+        *ngIf="task.status === 'ongoing' || task.status === 'terminated'">
+        <div class="progress-head">
           <span>Progress</span>
           <b>{{ getProgress(task) }}%</b>
         </div>
 
-        <div class="progress-bar">
-          <div class="progress-fill" [style.width.%]="getProgress(task)"></div>
+        <div class="progress-bar-pro">
+          <div class="progress-fill-pro" [style.width.%]="getProgress(task)"></div>
         </div>
 
-        <div class="timer-line">
+        <div class="progress-footer">
           <span *ngIf="task.status === 'ongoing'">
             Remaining: {{ getRemainingTime(task) }}
           </span>
-          <span *ngIf="task.status === 'terminated'">
-            Finished
-          </span>
+          <span *ngIf="task.status === 'terminated'">Finished</span>
         </div>
       </div>
 
-      <div class="task-card-actions">
-        <button class="mini-btn edit" (click)="editTask(task)">✏ Edit</button>
-        <button class="mini-btn delete" (click)="deleteTask(task)">🗑 Delete</button>
+      <div class="task-actions-pro">
+        <button class="action-btn edit" (click)="editTask(task)">
+          ✏ Edit
+        </button>
+
+        <button class="action-btn delete" (click)="deleteTask(task)">
+          🗑 Delete
+        </button>
 
         <button
-          class="mini-btn start"
+          class="action-btn start"
           *ngIf="task.status !== 'ongoing' && task.status !== 'terminated'"
           (click)="markAsOngoing(task)">
           ▶ Start
         </button>
 
         <button
-          class="mini-btn complete"
+          class="action-btn complete"
           *ngIf="task.status !== 'terminated'"
           (click)="markAsTerminated(task)">
           ✅ Complete
