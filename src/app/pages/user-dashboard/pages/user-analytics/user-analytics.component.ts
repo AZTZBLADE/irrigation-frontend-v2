@@ -1,5 +1,8 @@
-import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+import { BaseChartDirective } from 'ng2-charts';
+import { ChartData, ChartOptions } from 'chart.js';
+
 import {
   AnalyticsService,
   ComparisonDTO,
@@ -7,208 +10,421 @@ import {
   DailyUsage,
   HourlyIntensity,
   DailyDebit,
-  DailySurface,
+  DailySurface
 } from '../../../../core/analytics.service';
 
 @Component({
   selector: 'app-user-analytics',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BaseChartDirective],
   templateUrl: './user-analytics.component.html',
-  styleUrl: './user-analytics.component.scss',
+  styleUrls: ['./user-analytics.component.scss']
 })
-export class UserAnalyticsComponent implements OnInit {
-  loading = false;
+export class AnalyticsComponent implements OnInit {
+  private analyticsService = inject(AnalyticsService);
+
+  loading = true;
   error = '';
-
   comparison: ComparisonDTO | null = null;
-  cropUsage: CropUsage[] = [];
-  weeklyUsage: DailyUsage[] = [];
-  hourlyIntensity: HourlyIntensity[] = [];
-  dailyDebit: DailyDebit[] = [];
-  dailySurface: DailySurface[] = [];
 
-  cropColors = ['#2FA36B', '#4F46C6', '#E5B33B', '#E67E3A', '#2D8FD5', '#9B6CC2'];
+  doughnutData: ChartData<'doughnut'> = {
+    labels: [],
+    datasets: [
+      {
+        data: [],
+        backgroundColor: [
+          '#38b27f',
+          '#5b46d6',
+          '#e0aa2b',
+          '#ef7d57',
+          '#2f80ed',
+          '#8b5cf6'
+        ],
+        borderWidth: 0
+      }
+    ]
+  };
 
-  constructor(private analyticsService: AnalyticsService) {}
+  doughnutOptions: ChartOptions<'doughnut'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '60%',
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'circle',
+          boxWidth: 10,
+          boxHeight: 10,
+          padding: 16,
+          color: '#374151',
+          font: {
+            size: 13
+          }
+        }
+      }
+    }
+  };
+
+  weeklyBarData: ChartData<'bar'> = {
+    labels: [],
+    datasets: [
+      {
+        label: 'Water usage',
+        data: [],
+        backgroundColor: '#2f80ed',
+        borderRadius: 8,
+        maxBarThickness: 38
+      }
+    ]
+  };
+
+  weeklyBarOptions: ChartOptions<'bar'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          color: '#4b5563',
+          font: { size: 12 }
+        }
+      },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: '#e5e7eb'
+        },
+        ticks: {
+          color: '#6b7280',
+          font: { size: 12 }
+        }
+      }
+    }
+  };
+
+  hourlyBarData: ChartData<'bar'> = {
+    labels: [],
+    datasets: [
+      {
+        label: 'Hourly intensity',
+        data: [],
+        backgroundColor: '#38b27f',
+        borderRadius: 6,
+        maxBarThickness: 18
+      }
+    ]
+  };
+
+  hourlyBarOptions: ChartOptions<'bar'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          color: '#4b5563',
+          font: { size: 11 }
+        }
+      },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: '#e5e7eb'
+        },
+        ticks: {
+          color: '#6b7280',
+          font: { size: 12 }
+        }
+      }
+    }
+  };
+
+  debitLineData: ChartData<'line'> = {
+    labels: [],
+    datasets: [
+      {
+        label: 'Average debit',
+        data: [],
+        borderColor: '#e0aa2b',
+        backgroundColor: '#e0aa2b',
+        pointBackgroundColor: '#e0aa2b',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 5,
+        tension: 0.35,
+        fill: false
+      }
+    ]
+  };
+
+  debitLineOptions: ChartOptions<'line'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          color: '#4b5563',
+          font: { size: 12 }
+        }
+      },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: '#e5e7eb'
+        },
+        ticks: {
+          color: '#6b7280',
+          font: { size: 12 }
+        }
+      }
+    }
+  };
+
+  surfaceLineData: ChartData<'line'> = {
+    labels: [],
+    datasets: [
+      {
+        label: 'Surface',
+        data: [],
+        borderColor: '#5b46d6',
+        backgroundColor: 'rgba(91, 70, 214, 0.12)',
+        pointBackgroundColor: '#5b46d6',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 5,
+        tension: 0.35,
+        fill: true
+      }
+    ]
+  };
+
+  surfaceLineOptions: ChartOptions<'line'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          color: '#4b5563',
+          font: { size: 12 }
+        }
+      },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: '#e5e7eb'
+        },
+        ticks: {
+          color: '#6b7280',
+          font: { size: 12 }
+        }
+      }
+    }
+  };
 
   ngOnInit(): void {
-    this.loadAnalytics();
+    this.loadAllAnalytics();
   }
 
-  loadAnalytics(): void {
+  loadAllAnalytics(): void {
     this.loading = true;
     this.error = '';
 
-    this.analyticsService.getComparison().subscribe({
-      next: (comparison) => {
-        this.comparison = comparison;
+    let requestsCompleted = 0;
+    const totalRequests = 6;
 
-        this.analyticsService.getCropUsage().subscribe({
-          next: (cropUsage) => {
-            this.cropUsage = cropUsage || [];
-
-            this.analyticsService.getWeeklyUsage().subscribe({
-              next: (weeklyUsage) => {
-                this.weeklyUsage = weeklyUsage || [];
-
-                this.analyticsService.getHourlyIntensity().subscribe({
-                  next: (hourlyIntensity) => {
-                    this.hourlyIntensity = hourlyIntensity || [];
-
-                    this.analyticsService.getDailyDebit().subscribe({
-                      next: (dailyDebit) => {
-                        this.dailyDebit = dailyDebit || [];
-
-                        this.analyticsService.getDailySurface().subscribe({
-                          next: (dailySurface) => {
-                            this.dailySurface = dailySurface || [];
-                            this.loading = false;
-                          },
-                          error: (err) => {
-                            console.error(err);
-                            this.error = 'Failed to load surface analytics.';
-                            this.loading = false;
-                          },
-                        });
-                      },
-                      error: (err) => {
-                        console.error(err);
-                        this.error = 'Failed to load debit analytics.';
-                        this.loading = false;
-                      },
-                    });
-                  },
-                  error: (err) => {
-                    console.error(err);
-                    this.error = 'Failed to load hourly analytics.';
-                    this.loading = false;
-                  },
-                });
-              },
-              error: (err) => {
-                console.error(err);
-                this.error = 'Failed to load weekly analytics.';
-                this.loading = false;
-              },
-            });
-          },
-          error: (err) => {
-            console.error(err);
-            this.error = 'Failed to load crop analytics.';
-            this.loading = false;
-          },
-        });
-      },
-      error: (err) => {
-        console.error(err);
-        this.error = 'Failed to load comparison analytics.';
+    const completeOne = () => {
+      requestsCompleted++;
+      if (requestsCompleted === totalRequests) {
         this.loading = false;
+      }
+    };
+
+    this.analyticsService.getComparison().subscribe({
+      next: (data: ComparisonDTO) => {
+        this.comparison = data;
+        completeOne();
       },
+      error: () => {
+        this.error = 'Failed to load comparison data';
+        completeOne();
+      }
     });
+
+    this.analyticsService.getCropUsage().subscribe({
+      next: (data: CropUsage[]) => {
+        this.setCropChart(data);
+        completeOne();
+      },
+      error: () => {
+        this.error = 'Failed to load crop usage';
+        completeOne();
+      }
+    });
+
+    this.analyticsService.getWeeklyUsage().subscribe({
+      next: (data: DailyUsage[]) => {
+        this.setWeeklyChart(data);
+        completeOne();
+      },
+      error: () => {
+        this.error = 'Failed to load weekly usage';
+        completeOne();
+      }
+    });
+
+    this.analyticsService.getHourlyIntensity().subscribe({
+      next: (data: HourlyIntensity[]) => {
+        this.setHourlyChart(data);
+        completeOne();
+      },
+      error: () => {
+        this.error = 'Failed to load hourly intensity';
+        completeOne();
+      }
+    });
+
+    this.analyticsService.getDailyDebit().subscribe({
+      next: (data: DailyDebit[]) => {
+        this.setDebitChart(data);
+        completeOne();
+      },
+      error: () => {
+        this.error = 'Failed to load daily debit';
+        completeOne();
+      }
+    });
+
+    this.analyticsService.getDailySurface().subscribe({
+      next: (data: DailySurface[]) => {
+        this.setSurfaceChart(data);
+        completeOne();
+      },
+      error: () => {
+        this.error = 'Failed to load surface data';
+        completeOne();
+      }
+    });
+  }
+
+  setCropChart(data: CropUsage[]): void {
+    this.doughnutData = {
+      labels: data.map((item) => item.crop),
+      datasets: [
+        {
+          data: data.map((item) => item.totalWater),
+          backgroundColor: [
+            '#38b27f',
+            '#5b46d6',
+            '#e0aa2b',
+            '#ef7d57',
+            '#2f80ed',
+            '#8b5cf6'
+          ],
+          borderWidth: 0
+        }
+      ]
+    };
+  }
+
+  setWeeklyChart(data: DailyUsage[]): void {
+    this.weeklyBarData = {
+      labels: data.map((item) => item.day),
+      datasets: [
+        {
+          label: 'Water usage',
+          data: data.map((item) => item.totalWater),
+          backgroundColor: '#2f80ed',
+          borderRadius: 8,
+          maxBarThickness: 38
+        }
+      ]
+    };
+  }
+
+  setHourlyChart(data: HourlyIntensity[]): void {
+    this.hourlyBarData = {
+      labels: data.map((item) => item.hour.toString()),
+      datasets: [
+        {
+          label: 'Hourly intensity',
+          data: data.map((item) => item.totalWater),
+          backgroundColor: '#38b27f',
+          borderRadius: 6,
+          maxBarThickness: 18
+        }
+      ]
+    };
+  }
+
+  setDebitChart(data: DailyDebit[]): void {
+    this.debitLineData = {
+      labels: data.map((item) => item.day),
+      datasets: [
+        {
+          label: 'Average debit',
+          data: data.map((item) => item.averageDebit),
+          borderColor: '#e0aa2b',
+          backgroundColor: '#e0aa2b',
+          pointBackgroundColor: '#e0aa2b',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 5,
+          tension: 0.35,
+          fill: false
+        }
+      ]
+    };
+  }
+
+  setSurfaceChart(data: DailySurface[]): void {
+    this.surfaceLineData = {
+      labels: data.map((item) => item.date),
+      datasets: [
+        {
+          label: 'Surface',
+          data: data.map((item) => item.totalSurface),
+          borderColor: '#5b46d6',
+          backgroundColor: 'rgba(91, 70, 214, 0.12)',
+          pointBackgroundColor: '#5b46d6',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 5,
+          tension: 0.35,
+          fill: true
+        }
+      ]
+    };
   }
 
   diff(): number {
     if (!this.comparison) return 0;
-    return Number((this.comparison.today - this.comparison.yesterday).toFixed(1));
+    return +(this.comparison.today - this.comparison.yesterday).toFixed(1);
   }
 
   diffLabel(): string {
-    return this.diff() >= 0 ? 'Increase' : 'Decrease';
-  }
-
-  maxWeeklyWater(): number {
-    return Math.max(...this.weeklyUsage.map((i) => i.totalWater), 1);
-  }
-
-  weeklyBarHeight(value: number): number {
-    return (value / this.maxWeeklyWater()) * 100;
-  }
-
-  maxHourlyWater(): number {
-    return Math.max(...this.hourlyIntensity.map((i) => i.totalWater), 1);
-  }
-
-  hourlyBarHeight(value: number): number {
-    return (value / this.maxHourlyWater()) * 100;
-  }
-
-  maxDebit(): number {
-    return Math.max(...this.dailyDebit.map((i) => i.averageDebit), 1);
-  }
-
-  debitPointBottom(value: number): number {
-    return (value / this.maxDebit()) * 100;
-  }
-
-  maxSurface(): number {
-    return Math.max(...this.dailySurface.map((i) => i.totalSurface), 1);
-  }
-
-  surfacePointBottom(value: number): number {
-    return (value / this.maxSurface()) * 100;
-  }
-
-  cropTotal(): number {
-    return this.cropUsage.reduce((sum, item) => sum + item.totalWater, 0);
-  }
-
-  cropPercent(value: number): number {
-    const total = this.cropTotal();
-    if (!total) return 0;
-    return Math.round((value / total) * 100);
-  }
-
-  donutBackground(): string {
-    if (!this.cropUsage.length) {
-      return 'conic-gradient(#e5e7eb 0 100%)';
-    }
-
-    const total = this.cropTotal();
-    let current = 0;
-
-    const parts = this.cropUsage.map((item, index) => {
-      const percent = (item.totalWater / total) * 100;
-      const start = current;
-      const end = current + percent;
-      current = end;
-      return `${this.cropColors[index % this.cropColors.length]} ${start}% ${end}%`;
-    });
-
-    return `conic-gradient(${parts.join(', ')})`;
-  }
-
-  cropColor(index: number): string {
-    return this.cropColors[index % this.cropColors.length];
-  }
-
-  surfacePoints(): string {
-    if (!this.dailySurface.length) return '';
-
-    const max = this.maxSurface();
-    const count = this.dailySurface.length;
-
-    return this.dailySurface
-      .map((item, index) => {
-        const x = count === 1 ? 0 : (index / (count - 1)) * 100;
-        const y = 100 - (item.totalSurface / max) * 100;
-        return `${x},${y}`;
-      })
-      .join(' ');
-  }
-
-  debitPoints(): string {
-    if (!this.dailyDebit.length) return '';
-
-    const max = this.maxDebit();
-    const count = this.dailyDebit.length;
-
-    return this.dailyDebit
-      .map((item, index) => {
-        const x = count === 1 ? 0 : (index / (count - 1)) * 100;
-        const y = 100 - (item.averageDebit / max) * 100;
-        return `${x},${y}`;
-      })
-      .join(' ');
+    const value = this.diff();
+    if (value > 0) return 'Increase';
+    if (value < 0) return 'Decrease';
+    return 'No Change';
   }
 }

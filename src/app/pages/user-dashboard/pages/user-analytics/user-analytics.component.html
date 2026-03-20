@@ -1,6 +1,7 @@
 <div class="analytics-page">
   <div class="page-head">
     <h2>Analytics Dashboard</h2>
+    <p>Smart irrigation insights &amp; water consumption analytics</p>
   </div>
 
   <div class="state" *ngIf="loading">Loading analytics...</div>
@@ -9,164 +10,83 @@
   <ng-container *ngIf="!loading">
     <div class="summary-grid" *ngIf="comparison">
       <div class="summary-card blue">
-        <div class="summary-label">Today</div>
-        <div class="summary-value">{{ comparison.today }}</div>
-        <div class="summary-foot">Water consumption</div>
+        <div class="title">Today</div>
+        <div class="value">{{ comparison.today }}</div>
+        <div class="sub">Water consumption</div>
       </div>
 
       <div class="summary-card green">
-        <div class="summary-label">Yesterday</div>
-        <div class="summary-value">{{ comparison.yesterday }}</div>
-        <div class="summary-foot">Water consumption</div>
+        <div class="title">Yesterday</div>
+        <div class="value">{{ comparison.yesterday }}</div>
+        <div class="sub">Water consumption</div>
       </div>
 
       <div class="summary-card purple">
-        <div class="summary-label">{{ diffLabel() }}</div>
-        <div class="summary-value">{{ diff() }}</div>
-        <div class="summary-foot">Today vs yesterday</div>
+        <div class="title">{{ diffLabel() }}</div>
+        <div class="value">{{ diff() }}</div>
+        <div class="sub">Today vs yesterday</div>
       </div>
     </div>
 
-    <div class="analytics-grid">
-      <!-- Crop donut -->
-      <div class="panel">
+    <div class="grid">
+      <div class="card">
         <h3>Water Consumption by Crop</h3>
-
-        <div class="donut-section" *ngIf="cropUsage.length > 0; else noCropData">
-          <div class="donut-wrap">
-            <div class="donut-chart" [style.background]="donutBackground()">
-              <div class="donut-center"></div>
-            </div>
-          </div>
-
-          <div class="legend">
-            <div class="legend-item" *ngFor="let item of cropUsage; let i = index">
-              <span class="legend-dot" [style.background]="cropColor(i)"></span>
-              <span class="legend-name">{{ item.crop }}</span>
-              <span class="legend-value">{{ cropPercent(item.totalWater) }}%</span>
-            </div>
-          </div>
+        <div class="chart">
+          <canvas
+            baseChart
+            type="doughnut"
+            [data]="doughnutData"
+            [options]="doughnutOptions">
+          </canvas>
         </div>
-
-        <ng-template #noCropData>
-          <div class="empty-box">No crop data.</div>
-        </ng-template>
       </div>
 
-      <!-- Weekly bars -->
-      <div class="panel">
+      <div class="card">
         <h3>Weekly Water Usage</h3>
-
-        <div class="bar-chart" *ngIf="weeklyUsage.length > 0; else noWeeklyData">
-          <div class="chart-grid-lines">
-            <span></span><span></span><span></span><span></span>
-          </div>
-
-          <div class="bar-columns">
-            <div class="bar-col" *ngFor="let item of weeklyUsage">
-              <div class="bar-value">{{ item.totalWater }}</div>
-              <div class="bar-outer">
-                <div class="bar-inner blue-bar" [style.height.%]="weeklyBarHeight(item.totalWater)"></div>
-              </div>
-              <div class="bar-label">{{ item.day }}</div>
-            </div>
-          </div>
+        <div class="chart">
+          <canvas
+            baseChart
+            type="bar"
+            [data]="weeklyBarData"
+            [options]="weeklyBarOptions">
+          </canvas>
         </div>
-
-        <ng-template #noWeeklyData>
-          <div class="empty-box">No weekly data.</div>
-        </ng-template>
       </div>
 
-      <!-- Hourly -->
-      <div class="panel">
+      <div class="card">
         <h3>Hourly Irrigation Intensity</h3>
-
-        <div class="bar-chart green-chart" *ngIf="hourlyIntensity.length > 0; else noHourlyData">
-          <div class="chart-grid-lines">
-            <span></span><span></span><span></span><span></span>
-          </div>
-
-          <div class="bar-columns hourly-cols">
-            <div class="bar-col" *ngFor="let item of hourlyIntensity">
-              <div class="hour-top">{{ item.totalWater }}</div>
-              <div class="bar-outer">
-                <div class="bar-inner green-bar" [style.height.%]="hourlyBarHeight(item.totalWater)"></div>
-              </div>
-              <div class="hour-label">{{ item.hour }}</div>
-            </div>
-          </div>
+        <div class="chart">
+          <canvas
+            baseChart
+            type="bar"
+            [data]="hourlyBarData"
+            [options]="hourlyBarOptions">
+          </canvas>
         </div>
-
-        <ng-template #noHourlyData>
-          <div class="empty-box">No hourly data.</div>
-        </ng-template>
       </div>
 
-      <!-- Debit line -->
-      <div class="panel">
+      <div class="card">
         <h3>Average Debit by Day</h3>
-
-        <div class="line-chart-panel" *ngIf="dailyDebit.length > 0; else noDebitData">
-          <div class="line-grid-lines">
-            <span></span><span></span><span></span><span></span>
-          </div>
-
-          <svg class="line-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <polyline
-              class="line-path orange"
-              [attr.points]="debitPoints()">
-            </polyline>
-          </svg>
-
-          <div
-            class="line-point"
-            *ngFor="let item of dailyDebit; let i = index"
-            [style.left.%]="dailyDebit.length === 1 ? 0 : (i / (dailyDebit.length - 1)) * 100"
-            [style.bottom.%]="debitPointBottom(item.averageDebit)">
-          </div>
-
-          <div class="x-labels">
-            <span *ngFor="let item of dailyDebit">{{ item.day }}</span>
-          </div>
+        <div class="chart">
+          <canvas
+            baseChart
+            type="line"
+            [data]="debitLineData"
+            [options]="debitLineOptions">
+          </canvas>
         </div>
-
-        <ng-template #noDebitData>
-          <div class="empty-box">No debit data.</div>
-        </ng-template>
       </div>
 
-      <!-- Surface line -->
-      <div class="panel full">
+      <div class="card full">
         <h3>Total Irrigated Surface</h3>
-
-        <div class="line-chart-panel purple-line" *ngIf="dailySurface.length > 0; else noSurfaceData">
-          <div class="line-grid-lines">
-            <span></span><span></span><span></span><span></span>
-          </div>
-
-          <svg class="line-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <polyline
-              class="line-path purple"
-              [attr.points]="surfacePoints()">
-            </polyline>
-          </svg>
-
-          <div
-            class="line-point purple-point"
-            *ngFor="let item of dailySurface; let i = index"
-            [style.left.%]="dailySurface.length === 1 ? 0 : (i / (dailySurface.length - 1)) * 100"
-            [style.bottom.%]="surfacePointBottom(item.totalSurface)">
-          </div>
-
-          <div class="x-labels dates">
-            <span *ngFor="let item of dailySurface">{{ item.date }}</span>
-          </div>
+        <div class="chart surface-chart">
+          <canvas
+            baseChart
+            type="line"
+            [data]="surfaceLineData"
+            [options]="surfaceLineOptions">
+          </canvas>
         </div>
-
-        <ng-template #noSurfaceData>
-          <div class="empty-box">No surface data.</div>
-        </ng-template>
       </div>
     </div>
   </ng-container>
