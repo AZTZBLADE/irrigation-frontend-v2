@@ -15,6 +15,7 @@ import { UserWeatherComponent } from './pages/user-dashboard/pages/user-weather/
 import { UserProfileComponent } from './pages/user-dashboard/pages/user-profile/user-profile.component';
 
 import { authGuard } from './core/auth.guard';
+import { UserAnalyticsComponent } from './pages/user-dashboard/pages/user-analytics/user-analytics.component';
 
 export const routes: Routes = [
   // Auth
@@ -42,6 +43,7 @@ export const routes: Routes = [
     canActivateChild: [authGuard],
     children: [
       { path: '', redirectTo: 'tasks', pathMatch: 'full' },
+      { path: 'analytics', component: UserAnalyticsComponent },
       { path: 'tasks', component: UserTasksComponent },
       { path: 'ai-advice', component: UserAiAdviceComponent },
       { path: 'weather', component: UserWeatherComponent },

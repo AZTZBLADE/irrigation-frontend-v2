@@ -28,12 +28,12 @@ export interface AdminTask {
 })
 export class AdminService {
   private http = inject(HttpClient);
-
-  private usersApi = 'http://localhost:8080/api/users';
-  private tasksApi = 'http://localhost:8080/api/tasks';
+  private allUsersApi = 'http://localhost:8080/api/users/admin';
+  private usersApi = 'http://localhost:8080/api/users/admin/users';
+  private tasksApi = 'http://localhost:8080/api/users/admin/tasks';
 
   getAllUsers(): Observable<AdminUser[]> {
-    return this.http.get<AdminUser[]>(`${this.usersApi}/all`);
+    return this.http.get<AdminUser[]>(`${this.allUsersApi}/all`);
   }
 
   deleteUser(id: number): Observable<string> {
@@ -43,6 +43,6 @@ export class AdminService {
   }
 
 getAllTasks(): Observable<AdminTask[]> {
-  return this.http.get<AdminTask[]>(`http://localhost:8080/api/tasks/all`);
+  return this.http.get<AdminTask[]>(`${this.tasksApi}/all`);
 }
 }
