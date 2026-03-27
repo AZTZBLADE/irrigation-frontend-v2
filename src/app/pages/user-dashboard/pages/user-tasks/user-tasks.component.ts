@@ -57,6 +57,8 @@ export class UserTasksComponent implements OnInit, OnDestroy {
   showMapModal = false;
   selectedLatLng = '';
 
+  soilProfiles: string[] = ['SANDY', 'LOAMY', 'CLAYEY', 'SILTY'];
+
   private intervalId: any;
   private updatingTaskIds = new Set<number>();
 
@@ -65,8 +67,10 @@ export class UserTasksComponent implements OnInit, OnDestroy {
     location: ['', Validators.required],
     surface: [0, [Validators.required, Validators.min(0)]],
     startTime: ['', Validators.required],
+    plantingDate: ['', Validators.required],
     duration: [60, [Validators.required, Validators.min(1)]],
     crop: ['', Validators.required],
+    soilProfile: ['', Validators.required],
     waterAmount: [1200, [Validators.required, Validators.min(0)]],
     debit: [20, [Validators.required, Validators.min(0)]],
     status: ['planned' as UiTab, Validators.required],
@@ -174,7 +178,8 @@ export class UserTasksComponent implements OnInit, OnDestroy {
         !search ||
         task.name.toLowerCase().includes(search) ||
         task.location.toLowerCase().includes(search) ||
-        task.crop.toLowerCase().includes(search);
+        task.crop.toLowerCase().includes(search) ||
+        (task.soilProfile || '').toLowerCase().includes(search);
 
       return statusOk && searchOk;
     });
@@ -208,8 +213,10 @@ export class UserTasksComponent implements OnInit, OnDestroy {
       location: '',
       surface: 0,
       startTime: '',
+      plantingDate: '',
       duration: 60,
       crop: '',
+      soilProfile: '',
       waterAmount: 1200,
       debit: 20,
       status: 'planned',
@@ -233,8 +240,10 @@ export class UserTasksComponent implements OnInit, OnDestroy {
       location: task.location,
       surface: Number(task.surface || 0),
       startTime: task.startTime?.slice(0, 16),
+      plantingDate: task.plantingDate || '',
       duration: task.duration,
       crop: task.crop,
+      soilProfile: task.soilProfile || '',
       waterAmount: task.waterAmount,
       debit: task.debit,
       status: (task.status || 'planned') as UiTab,
@@ -257,8 +266,10 @@ export class UserTasksComponent implements OnInit, OnDestroy {
       location: raw.location || '',
       surface: Number(raw.surface || 0),
       startTime: raw.startTime || '',
+      plantingDate: raw.plantingDate || '',
       duration: Number(raw.duration || 0),
       crop: raw.crop || '',
+      soilProfile: raw.soilProfile || '',
       waterAmount: Number(raw.waterAmount || 0),
       debit: Number(raw.debit || 0),
       status: (raw.status || 'planned') as TaskStatus,

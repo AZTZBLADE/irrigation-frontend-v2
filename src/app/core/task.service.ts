@@ -13,6 +13,8 @@ export interface Task {
   waterAmount: number;
   debit: number;
   startTime: string;
+  plantingDate?: string;
+  soilProfile?: string;
   crop: string;
   userEmail?: string;
   status?: TaskStatus;

@@ -86,6 +86,7 @@
             <span class="tag location">📍 {{ task.location }}</span>
             <span class="tag crop">🌿 {{ task.crop }}</span>
             <span class="tag surface">📐 {{ task.surface || 0 }} m²</span>
+            <span class="tag soil" *ngIf="task.soilProfile">🧱 {{ task.soilProfile }}</span>
           </div>
         </div>
 
@@ -130,6 +131,16 @@
         <div class="detail-item">
           <span>Start Time</span>
           <b>{{ task.startTime }}</b>
+        </div>
+
+        <div class="detail-item">
+          <span>Planting Date</span>
+          <b>{{ task.plantingDate || '-' }}</b>
+        </div>
+
+        <div class="detail-item">
+          <span>Soil Profile</span>
+          <b>{{ task.soilProfile || '-' }}</b>
         </div>
 
         <div class="detail-item">
@@ -215,6 +226,8 @@
           <th>Location</th>
           <th>Surface</th>
           <th>Crop</th>
+          <th>Planting Date</th>
+          <th>Soil Profile</th>
           <th>Start Time</th>
           <th>Duration</th>
           <th>Weather</th>
@@ -228,6 +241,8 @@
           <td>{{ task.location }}</td>
           <td>{{ task.surface || 0 }} m²</td>
           <td>{{ task.crop }}</td>
+          <td>{{ task.plantingDate || '-' }}</td>
+          <td>{{ task.soilProfile || '-' }}</td>
           <td>{{ task.startTime }}</td>
           <td>{{ task.duration }} min</td>
           <td>
@@ -239,7 +254,7 @@
         </tr>
 
         <tr *ngIf="filteredTasks.length === 0">
-          <td colspan="8" class="empty-cell">No tasks found.</td>
+          <td colspan="10" class="empty-cell">No tasks found.</td>
         </tr>
       </tbody>
     </table>
@@ -285,6 +300,11 @@
       </label>
 
       <label>
+        Planting Date
+        <input type="date" formControlName="plantingDate" />
+      </label>
+
+      <label>
         Duration (minutes)
         <input type="number" formControlName="duration" />
       </label>
@@ -292,6 +312,16 @@
       <label>
         Crop
         <input type="text" formControlName="crop" placeholder="Potatoes" />
+      </label>
+
+      <label>
+        Soil Profile
+        <select formControlName="soilProfile">
+          <option value="">Select soil profile</option>
+          <option *ngFor="let soil of soilProfiles" [value]="soil">
+            {{ soil }}
+          </option>
+        </select>
       </label>
 
       <label>
