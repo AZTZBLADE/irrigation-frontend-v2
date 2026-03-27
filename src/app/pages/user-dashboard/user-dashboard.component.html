@@ -1,31 +1,61 @@
-<div class="layout">
+<div class="dashboard-shell">
   <aside class="sidebar">
-    <div class="brand">
-      <div class="logo">🌿</div>
-      <div>
-        <div class="title">Smart Irrigation</div>
-        <div class="sub">User Dashboard</div>
+    <div class="sidebar-top">
+      <div class="brand-card">
+        <div class="logo-wrap">
+          <div class="logo">🌿</div>
+        </div>
+        <div class="brand-text">
+          <h2>Smart Irrigation</h2>
+          <p>User Dashboard</p>
+        </div>
       </div>
+
+      <nav class="nav-links">
+        <a routerLink="/user/tasks" routerLinkActive="active">
+          <span class="icon">✅</span>
+          <span>Tasks</span>
+        </a>
+
+        <a routerLink="/user/analytics" routerLinkActive="active">
+          <span class="icon">📊</span>
+          <span>Analytics</span>
+        </a>
+
+        <a routerLink="/user/weather" routerLinkActive="active">
+          <span class="icon">🔔</span>
+          <span>Notification</span>
+        </a>
+
+        <a routerLink="/user/profile" routerLinkActive="active">
+          <span class="icon">👤</span>
+          <span>Profile</span>
+        </a>
+      </nav>
     </div>
 
-    <nav class="nav">
-      <a routerLink="/user/tasks" routerLinkActive="active">✅ Tasks</a>
-            <a routerLink="/user/analytics" routerLinkActive="active">📊 Analytics</a>
-      
-      <a routerLink="/user/weather" routerLinkActive="active">🔔 Notification</a>
-      <a routerLink="/user/profile" routerLinkActive="active">👤 Profile</a>
-    </nav>
-
-    <button class="logout" (click)="logout()">Logout</button>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" (click)="logout()">
+        <span>↩</span>
+        <span>Logout</span>
+      </button>
+    </div>
   </aside>
 
-  <main class="content">
+  <main class="main-content">
     <header class="topbar">
-      <div class="welcome">Welcome 👋</div>
-      <div class="hint">Manage your irrigation easily</div>
+      <div>
+        <h1>Welcome back </h1>
+        <p>Manage your irrigation system easily and track everything in one place.</p>
+      </div>
+
+      <div class="topbar-badge">
+        <span class="dot"></span>
+        System Active
+      </div>
     </header>
 
-    <section class="page">
+    <section class="content-card">
       <router-outlet></router-outlet>
     </section>
   </main>
