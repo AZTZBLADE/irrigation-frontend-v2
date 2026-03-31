@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
+import { WelcomePageComponent } from './pages/welcome-page/welcome-page.component';
 
 import { AdminLayoutComponent } from './pages/admin-layout/admin-layout.component';
 import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard.component';
@@ -18,9 +19,14 @@ import { AnalyticsComponent } from './pages/user-dashboard/pages/user-analytics/
 import { authGuard } from './core/auth.guard';
 
 export const routes: Routes = [
+  // ✅ Welcome Page
+  { path: '', component: WelcomePageComponent },
+
+  // Auth
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
 
+  // Admin
   {
     path: 'admin',
     component: AdminLayoutComponent,
@@ -33,6 +39,7 @@ export const routes: Routes = [
     ],
   },
 
+  // User
   {
     path: 'user',
     component: UserDashboardComponent,
@@ -48,6 +55,6 @@ export const routes: Routes = [
     ],
   },
 
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
-  { path: '**', redirectTo: 'login' },
+  // fallback
+  { path: '**', redirectTo: '' },
 ];
