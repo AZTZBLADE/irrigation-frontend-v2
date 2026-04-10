@@ -1,6 +1,10 @@
 <div class="dashboard-shell">
+
+  <!-- ===== Sidebar ===== -->
   <aside class="sidebar">
     <div class="sidebar-top">
+
+      <!-- Brand -->
       <div class="brand-card">
         <div class="logo-wrap">
           <div class="logo">🌿</div>
@@ -11,7 +15,9 @@
         </div>
       </div>
 
+      <!-- Navigation -->
       <nav class="nav-links">
+
         <a routerLink="/user/tasks" routerLinkActive="active">
           <span class="icon">✅</span>
           <span>Tasks</span>
@@ -22,12 +28,10 @@
           <span>Analytics</span>
         </a>
 
-        <a routerLink="/user/weather" routerLinkActive="active">
-          <span class="icon">🔔</span>
-          <span>Notification</span>
-        </a>
-        <a routerLink="/user/weather" routerLinkActive="active">
-            <span class="icon">📋</span>
+     
+
+        <a routerLink="/user/report" routerLinkActive="active">
+          <span class="icon">📄</span>
           <span>Report</span>
         </a>
 
@@ -35,9 +39,11 @@
           <span class="icon">👤</span>
           <span>Profile</span>
         </a>
+
       </nav>
     </div>
 
+    <!-- Logout -->
     <div class="sidebar-bottom">
       <button class="logout-btn" (click)="logout()">
         <span>↩</span>
@@ -46,21 +52,65 @@
     </div>
   </aside>
 
+  <!-- ===== Main Content ===== -->
   <main class="main-content">
+
+    <!-- ===== Topbar ===== -->
     <header class="topbar">
+
       <div>
-        <h1>Welcome back </h1>
-        <p>Manage your irrigation system easily and track everything in one place.</p>
+        <h1>Welcome back 👋</h1>
+        <p>Manage your irrigation system easily and track everything.</p>
       </div>
 
-      <div class="topbar-badge">
-        <span class="dot"></span>
-        System Active
+      <div class="topbar-actions">
+
+        <!-- 🔔 Notifications -->
+        <div class="notification-wrapper">
+
+          <button class="notification-btn" (click)="toggleNotifications()">
+            🔔
+            <span class="notification-count" *ngIf="notifications.length > 0">
+              {{ notifications.length }}
+            </span>
+          </button>
+
+          <!-- Dropdown -->
+          <div class="notification-dropdown" *ngIf="showNotifications">
+
+            <div class="notification-header">
+              <h3>Notifications</h3>
+              <button (click)="loadNotifications()">↻</button>
+            </div>
+
+            <div *ngIf="loadingNotifications">
+              Loading...
+            </div>
+
+            <div *ngIf="!loadingNotifications && notifications.length === 0">
+              No notifications
+            </div>
+
+            <div *ngFor="let notif of notifications" class="notification-item">
+              🔔 {{ notif }}
+            </div>
+
+          </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="topbar-badge">
+          <span class="dot"></span>
+          System Active
+        </div>
+
       </div>
     </header>
 
+    <!-- ===== Pages Content ===== -->
     <section class="content-card">
       <router-outlet></router-outlet>
     </section>
+
   </main>
 </div>

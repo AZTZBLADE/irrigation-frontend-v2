@@ -1,0 +1,16 @@
+<div class="report-page">
+
+  <div class="report-card">
+    <h2>📊 Smart Irrigation Report</h2>
+    <p>
+      Download your full irrigation report including tasks, analytics,
+      weather insights and system performance.
+    </p>
+
+    <button (click)="downloadReport()" [disabled]="loading">
+      <span *ngIf="!loading">📥 Download PDF</span>
+      <span *ngIf="loading">⏳ Downloading...</span>
+    </button>
+  </div>
+
+</div>

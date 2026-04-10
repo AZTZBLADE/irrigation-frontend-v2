@@ -83,6 +83,7 @@ export class UserTasksComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadTasks();
+    // Au démarrage, on lance l'appel Bulk pour récupérer tous les conseils d'un coup
     this.loadGlobalInsights();
 
     this.intervalId = setInterval(() => {
@@ -113,7 +114,7 @@ export class UserTasksComponent implements OnInit, OnDestroy {
 
         this.loading = false;
         this.syncTasksWithTime();
-        this.loadInsightsForTasks();
+        // NOTE: On ne lance plus loadInsightsForTasks() ici pour éviter les appels multiples
       },
       error: (err) => {
         console.error(err);
@@ -123,23 +124,24 @@ export class UserTasksComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadInsightsForTasks(): void {
-    this.tasks.forEach((task) => {
-      if (!task.id) return;
-
-      this.taskService.getTaskWeatherInsight(task.id).subscribe({
-        next: (res) => {
-          this.insightsMap[task.id!] = res;
-        },
-        error: () => {},
-      });
-    });
-  }
-
+  /**
+   * METHODE OPTIMISÉE (BULK)
+   * Cette méthode récupère tous les conseils en un seul appel
+   * et remplit le dictionnaire insightsMap utilisé par l'affichage.
+   */
   loadGlobalInsights(): void {
     this.taskService.getAutomatedInsights().subscribe({
-      next: (res) => {
+      next: (res: any[]) => {
         this.globalInsights = res;
+
+        // On remplit le dictionnaire pour que chaque carte trouve son conseil
+        if (Array.isArray(res)) {
+          res.forEach((insight: any) => {
+            if (insight.taskId) {
+              this.insightsMap[insight.taskId] = insight;
+            }
+          });
+        }
       },
       error: () => {
         this.globalInsights = null;
@@ -147,10 +149,25 @@ export class UserTasksComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Rafraîchissement individuel (Optionnel)
+   * À utiliser seulement si tu ajoutes un bouton "Actualiser" sur une carte spécifique.
+   */
+  refreshSingleInsight(taskId: number): void {
+    this.taskService.getTaskWeatherInsight(taskId).subscribe({
+      next: (res) => {
+        this.insightsMap[taskId] = res;
+      },
+      error: () => {},
+    });
+  }
+
   getInsight(taskId?: number): WeatherTaskInsight | null {
     if (!taskId) return null;
     return this.insightsMap[taskId] || null;
   }
+
+  // --- Reste des méthodes inchangé ---
 
   setTab(tab: UiTab): void {
     this.activeTab = tab;
@@ -171,9 +188,7 @@ export class UserTasksComponent implements OnInit, OnDestroy {
   get filteredTasks(): Task[] {
     const filtered = this.tasks.filter((task) => {
       const statusOk = (task.status || 'planned') === this.activeTab;
-
       const search = this.searchTerm.trim().toLowerCase();
-
       const searchOk =
         !search ||
         task.name.toLowerCase().includes(search) ||
@@ -187,7 +202,6 @@ export class UserTasksComponent implements OnInit, OnDestroy {
     return filtered.sort((a, b) => {
       const dateA = a.startTime ? new Date(a.startTime).getTime() : 0;
       const dateB = b.startTime ? new Date(b.startTime).getTime() : 0;
-
       return this.dateSort === 'newest' ? dateB - dateA : dateA - dateB;
     });
   }
@@ -207,7 +221,6 @@ export class UserTasksComponent implements OnInit, OnDestroy {
   openModal(): void {
     this.editingTaskId = null;
     this.error = '';
-
     this.form.reset({
       name: '',
       location: '',
@@ -221,7 +234,6 @@ export class UserTasksComponent implements OnInit, OnDestroy {
       debit: 20,
       status: 'planned',
     });
-
     this.selectedLatLng = '';
     this.showModal = true;
   }
@@ -234,7 +246,6 @@ export class UserTasksComponent implements OnInit, OnDestroy {
   editTask(task: Task): void {
     this.editingTaskId = task.id ?? null;
     this.error = '';
-
     this.form.patchValue({
       name: task.name,
       location: task.location,
@@ -248,19 +259,15 @@ export class UserTasksComponent implements OnInit, OnDestroy {
       debit: task.debit,
       status: (task.status || 'planned') as UiTab,
     });
-
     this.selectedLatLng = task.location || '';
     this.showModal = true;
   }
 
   submit(): void {
     if (this.form.invalid) return;
-
     this.loading = true;
     this.error = '';
-
     const raw = this.form.getRawValue();
-
     const payload: Task = {
       name: raw.name || '',
       location: raw.location || '',
@@ -281,6 +288,7 @@ export class UserTasksComponent implements OnInit, OnDestroy {
           this.loading = false;
           this.closeModal();
           this.loadTasks();
+          this.loadGlobalInsights(); // On rafraîchit les conseils Bulk après modification
         },
         error: (err) => {
           console.error(err);
@@ -294,6 +302,7 @@ export class UserTasksComponent implements OnInit, OnDestroy {
           this.loading = false;
           this.closeModal();
           this.loadTasks();
+          this.loadGlobalInsights(); // On rafraîchit les conseils Bulk après création
         },
         error: (err) => {
           console.error(err);
@@ -307,7 +316,6 @@ export class UserTasksComponent implements OnInit, OnDestroy {
   deleteTask(task: Task): void {
     if (!task.id) return;
     if (!confirm('Delete this task ?')) return;
-
     this.taskService.deleteTask(task.id).subscribe({
       next: () => {
         this.tasks = this.tasks.filter((t) => t.id !== task.id);
@@ -323,14 +331,8 @@ export class UserTasksComponent implements OnInit, OnDestroy {
   markAsOngoing(task: Task): void {
     if (!task.id) return;
     if (this.updatingTaskIds.has(task.id)) return;
-
     this.updatingTaskIds.add(task.id);
-
-    const updated: Task = {
-      ...task,
-      status: 'ongoing',
-    };
-
+    const updated: Task = { ...task, status: 'ongoing' };
     this.taskService.updateTask(task.id, updated).subscribe({
       next: () => {
         task.status = 'ongoing';
@@ -345,14 +347,8 @@ export class UserTasksComponent implements OnInit, OnDestroy {
   markAsTerminated(task: Task): void {
     if (!task.id) return;
     if (this.updatingTaskIds.has(task.id)) return;
-
     this.updatingTaskIds.add(task.id);
-
-    const updated: Task = {
-      ...task,
-      status: 'terminated',
-    };
-
+    const updated: Task = { ...task, status: 'terminated' };
     this.taskService.updateTask(task.id, updated).subscribe({
       next: () => {
         task.status = 'terminated';
@@ -366,15 +362,11 @@ export class UserTasksComponent implements OnInit, OnDestroy {
 
   async openMapModal(): Promise<void> {
     this.showMapModal = true;
-
     if (this.isBrowser) {
       setTimeout(async () => {
         await this.initMap();
-
         setTimeout(() => {
-          if (this.map) {
-            this.map.invalidateSize();
-          }
+          if (this.map) { this.map.invalidateSize(); }
           this.loadMapFromExistingLocation();
         }, 400);
       }, 100);
@@ -383,7 +375,6 @@ export class UserTasksComponent implements OnInit, OnDestroy {
 
   closeMapModal(): void {
     this.showMapModal = false;
-
     if (this.map) {
       this.map.remove();
       this.map = null;
@@ -393,32 +384,25 @@ export class UserTasksComponent implements OnInit, OnDestroy {
 
   confirmMapLocation(): void {
     if (this.selectedLatLng) {
-      this.form.patchValue({
-        location: this.selectedLatLng,
-      });
+      this.form.patchValue({ location: this.selectedLatLng });
     }
-
     this.closeMapModal();
   }
 
   async initMap(): Promise<void> {
     if (!this.isBrowser) return;
-
     if (!this.L) {
       const leaflet = await import('leaflet');
       this.L = leaflet;
     }
-
     if (this.map) {
       this.map.remove();
       this.map = null;
     }
-
     this.map = this.L.map('task-map-modal', {
       center: [36.8065, 10.1815],
       zoom: 13,
     });
-
     this.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(this.map);
@@ -426,63 +410,44 @@ export class UserTasksComponent implements OnInit, OnDestroy {
     this.map.on('click', (e: any) => {
       const lat = e.latlng.lat;
       const lng = e.latlng.lng;
-
-      if (this.marker) {
-        this.map.removeLayer(this.marker);
-      }
-
+      if (this.marker) { this.map.removeLayer(this.marker); }
       this.marker = this.L.marker([lat, lng]).addTo(this.map);
       this.selectedLatLng = `${lat.toFixed(6)},${lng.toFixed(6)}`;
     });
 
     setTimeout(() => {
-      if (this.map) {
-        this.map.invalidateSize();
-      }
+      if (this.map) { this.map.invalidateSize(); }
     }, 300);
   }
 
   loadMapFromExistingLocation(): void {
     const value = this.form.get('location')?.value;
-
     if (!value || typeof value !== 'string' || !value.includes(',')) return;
     if (!this.map || !this.L) return;
-
     const [latStr, lngStr] = value.split(',');
     const lat = Number(latStr);
     const lng = Number(lngStr);
-
     if (isNaN(lat) || isNaN(lng)) return;
-
     this.selectedLatLng = value;
     this.map.setView([lat, lng], 13);
-
-    if (this.marker) {
-      this.map.removeLayer(this.marker);
-    }
-
+    if (this.marker) { this.map.removeLayer(this.marker); }
     this.marker = this.L.marker([lat, lng]).addTo(this.map);
   }
 
   syncTasksWithTime(): void {
     const now = Date.now();
-
     this.tasks.forEach((task) => {
       if (!task.startTime || !task.duration) return;
-
       const start = new Date(task.startTime).getTime();
       const end = start + task.duration * 60000;
-
       if (now >= end && task.status !== 'terminated') {
         this.markAsTerminated(task);
         return;
       }
-
       if (now >= start && now < end) {
         task.status = 'ongoing';
         return;
       }
-
       if (now < start) {
         task.status = 'planned';
       }
@@ -497,31 +462,24 @@ export class UserTasksComponent implements OnInit, OnDestroy {
 
   getProgress(task: Task): number {
     if (!task.startTime || !task.duration) return 0;
-
     const start = new Date(task.startTime).getTime();
     const end = start + task.duration * 60000;
     const now = Date.now();
-
     if (now <= start) return 0;
     if (now >= end) return 100;
-
     return Math.round(((now - start) / (end - start)) * 100);
   }
 
   getRemainingTime(task: Task): string {
     if (!task.startTime || !task.duration) return '-';
-
     const start = new Date(task.startTime).getTime();
     const end = start + task.duration * 60000;
     const now = Date.now();
-
     const diff = end - now;
     if (diff <= 0) return 'Finished';
-
     const totalSeconds = Math.floor(diff / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
-
     return `${minutes}m ${seconds}s`;
   }
 }
