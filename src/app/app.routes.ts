@@ -22,6 +22,7 @@ import { UserReportComponent } from './pages/user-dashboard/pages/user-report/us
 
 // Guard
 import { authGuard } from './core/auth.guard';
+import { UserChatbotComponent } from './pages/user-dashboard/pages/user-chatbot/user-chatbot.component';
 
 export const routes: Routes = [
 
@@ -56,6 +57,7 @@ export const routes: Routes = [
       { path: 'analytics', component: AnalyticsComponent },
       { path: 'ai-advice', component: UserAiAdviceComponent },
       { path: 'weather', component: UserWeatherComponent },
+      { path: 'chatbot', component: UserChatbotComponent },
       { path: 'profile', component: UserProfileComponent },
       { path: 'report', component: UserReportComponent }, // 🔥 report page
     ],

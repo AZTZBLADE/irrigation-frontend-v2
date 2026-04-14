@@ -1,7 +1,17 @@
 <div class="tasks-page">
+  <div class="tasks-bg-blur blur-one"></div>
+  <div class="tasks-bg-blur blur-two"></div>
+
   <div class="head">
-    <h2>Smart Irrigation Tasks</h2>
-    <p class="subtitle">Weather-aware planning and AI recommendations</p>
+    <div>
+      <h2>Smart Irrigation Tasks</h2>
+      <p class="subtitle">Weather-aware planning and AI recommendations</p>
+    </div>
+
+    <button class="add-task-btn" type="button" (click)="openModal()">
+      <span>＋</span>
+      <span>New Task</span>
+    </button>
   </div>
 
   <div class="global-ai-card" *ngIf="globalInsights">
@@ -12,63 +22,68 @@
     </div>
   </div>
 
-  <div class="tabs">
-    <button class="tab" [class.active]="activeTab === 'planned'" (click)="setTab('planned')">
-      Planned ({{ plannedCount }})
-    </button>
+  <div class="top-controls">
+    <div class="tabs">
+      <button class="tab" [class.active]="activeTab === 'planned'" (click)="setTab('planned')">
+        Planned <span>{{ plannedCount }}</span>
+      </button>
 
-    <button class="tab" [class.active]="activeTab === 'ongoing'" (click)="setTab('ongoing')">
-      In Progress ({{ ongoingCount }})
-    </button>
+      <button class="tab" [class.active]="activeTab === 'ongoing'" (click)="setTab('ongoing')">
+        In Progress <span>{{ ongoingCount }}</span>
+      </button>
 
-    <button class="tab" [class.active]="activeTab === 'terminated'" (click)="setTab('terminated')">
-      Completed ({{ terminatedCount }})
-    </button>
-  </div>
-
-  <div class="toolbar">
-    <div class="filters">
-      <input
-        type="text"
-        placeholder="Search by task, crop, location"
-        [(ngModel)]="searchTerm" />
-
-      <button class="btn-filter" type="button" (click)="clearSearch()">
-        Reset
+      <button class="tab" [class.active]="activeTab === 'terminated'" (click)="setTab('terminated')">
+        Completed <span>{{ terminatedCount }}</span>
       </button>
     </div>
 
-    <div class="right-tools">
-      <div class="sort-switch">
-        <button
-          type="button"
-          [class.active]="dateSort === 'newest'"
-          (click)="setDateSort('newest')">
-          Newest
-        </button>
+    <div class="toolbar">
+      <div class="filters">
+        <div class="search-box">
+          <span>⌕</span>
+          <input
+            type="text"
+            placeholder="Search by task, crop, location"
+            [(ngModel)]="searchTerm" />
+        </div>
 
-        <button
-          type="button"
-          [class.active]="dateSort === 'oldest'"
-          (click)="setDateSort('oldest')">
-          Oldest
+        <button class="btn-filter" type="button" (click)="clearSearch()">
+          Reset
         </button>
       </div>
 
-      <div class="view-switch">
-        <button
-          type="button"
-          [class.active]="viewMode === 'cards'"
-          (click)="setView('cards')">
-          Cards
-        </button>
+      <div class="right-tools">
+        <div class="sort-switch">
+          <button
+            type="button"
+            [class.active]="dateSort === 'newest'"
+            (click)="setDateSort('newest')">
+            Newest
+          </button>
 
-        <button
-          type="button"
-          [class.active]="viewMode === 'table'"
-          (click)="setView('table')">
-          Table
-        </button>
+          <button
+            type="button"
+            [class.active]="dateSort === 'oldest'"
+            (click)="setDateSort('oldest')">
+            Oldest
+          </button>
+        </div>
+
+        <div class="view-switch">
+          <button
+            type="button"
+            [class.active]="viewMode === 'cards'"
+            (click)="setView('cards')">
+            Cards
+          </button>
+
+          <button
+            type="button"
+            [class.active]="viewMode === 'table'"
+            (click)="setView('table')">
+            Table
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -78,6 +93,18 @@
 
   <div class="task-grid" *ngIf="!loading && viewMode === 'cards'">
     <div class="task-card pro-card" *ngFor="let task of filteredTasks">
+      <div class="card-topbar">
+        <div class="card-icon">💧</div>
+
+        <div
+          class="status-badge"
+          [class.planned]="task.status === 'planned'"
+          [class.ongoing]="task.status === 'ongoing'"
+          [class.done]="task.status === 'terminated'">
+          {{ statusLabel(task.status) }}
+        </div>
+      </div>
+
       <div class="task-top">
         <div class="task-main-info">
           <div class="task-name">{{ task.name }}</div>
@@ -88,14 +115,6 @@
             <span class="tag surface">📐 {{ task.surface || 0 }} m²</span>
             <span class="tag soil" *ngIf="task.soilProfile">🧱 {{ task.soilProfile }}</span>
           </div>
-        </div>
-
-        <div
-          class="status-badge"
-          [class.planned]="task.status === 'planned'"
-          [class.ongoing]="task.status === 'ongoing'"
-          [class.done]="task.status === 'terminated'">
-          {{ statusLabel(task.status) }}
         </div>
       </div>
 

@@ -1,0 +1,46 @@
+<div class="chatbot-page">
+  <div class="chatbot-header">
+    <h2>Plant AI Chatbot</h2>
+    <p>Ask questions about your plants or upload a photo for disease analysis.</p>
+  </div>
+
+  <div class="chatbot-card">
+    <div class="messages">
+      <div
+        class="message"
+        *ngFor="let msg of messages"
+        [class.user]="msg.sender === 'user'"
+        [class.bot]="msg.sender === 'bot'">
+        {{ msg.text }}
+      </div>
+
+      <div class="message bot" *ngIf="loading">Thinking...</div>
+      <div class="message bot" *ngIf="analyzing">Analyzing image...</div>
+    </div>
+
+    <div class="chat-input-area">
+      <textarea
+        [(ngModel)]="prompt"
+        placeholder="Write your question here..."
+        rows="3"></textarea>
+
+      <div class="actions">
+        <button class="btn primary" (click)="sendMessage()" [disabled]="loading">
+          Send
+        </button>
+      </div>
+    </div>
+
+    <div class="upload-section">
+      <label class="upload-label">Analyze plant image</label>
+      <input type="file" accept="image/*" (change)="onFileSelected($event)" />
+
+      <button
+        class="btn secondary"
+        (click)="analyzeImage()"
+        [disabled]="!selectedFile || analyzing">
+        Analyze Image
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,26 +1,23 @@
 <div class="dashboard-shell">
+  <div class="dashboard-overlay"></div>
 
-  <!-- ===== Sidebar ===== -->
   <aside class="sidebar">
     <div class="sidebar-top">
-
-      <!-- Brand -->
       <div class="brand-card">
         <div class="logo-wrap">
           <div class="logo">🌿</div>
         </div>
+
         <div class="brand-text">
           <h2>Smart Irrigation</h2>
           <p>User Dashboard</p>
         </div>
       </div>
 
-      <!-- Navigation -->
       <nav class="nav-links">
-
         <a routerLink="/user/tasks" routerLinkActive="active">
-          <span class="icon">✅</span>
-          <span>Tasks</span>
+          <span class="icon">📋</span>
+          <span>My Tasks</span>
         </a>
 
         <a routerLink="/user/analytics" routerLinkActive="active">
@@ -28,89 +25,80 @@
           <span>Analytics</span>
         </a>
 
-     
-
         <a routerLink="/user/report" routerLinkActive="active">
           <span class="icon">📄</span>
           <span>Report</span>
         </a>
-
+<a routerLink="/user/chatbot" routerLinkActive="active">
+  <span class="icon">🤖</span>
+  <span>Chatbot</span>
+</a>
         <a routerLink="/user/profile" routerLinkActive="active">
           <span class="icon">👤</span>
-          <span>Profile</span>
+          <span>Account</span>
         </a>
-
       </nav>
     </div>
 
-    <!-- Logout -->
     <div class="sidebar-bottom">
       <button class="logout-btn" (click)="logout()">
-        <span>↩</span>
+        <span>⏻</span>
         <span>Logout</span>
       </button>
     </div>
   </aside>
 
-  <!-- ===== Main Content ===== -->
   <main class="main-content">
-
-    <!-- ===== Topbar ===== -->
     <header class="topbar">
-
-      <div>
+      <div class="welcome-block">
         <h1>Welcome back 👋</h1>
-        <p>Manage your irrigation system easily and track everything.</p>
+        <p>Manage your irrigation system, monitor activity, and stay updated in real time.</p>
       </div>
 
       <div class="topbar-actions">
-
-        <!-- 🔔 Notifications -->
         <div class="notification-wrapper">
-
           <button class="notification-btn" (click)="toggleNotifications()">
-            🔔
+            <span class="bell">🔔</span>
             <span class="notification-count" *ngIf="notifications.length > 0">
               {{ notifications.length }}
             </span>
           </button>
 
-          <!-- Dropdown -->
           <div class="notification-dropdown" *ngIf="showNotifications">
-
             <div class="notification-header">
               <h3>Notifications</h3>
-              <button (click)="loadNotifications()">↻</button>
+              <button class="refresh-btn" (click)="loadNotifications()">↻</button>
             </div>
 
-            <div *ngIf="loadingNotifications">
+            <div *ngIf="loadingNotifications" class="notification-empty">
               Loading...
             </div>
 
-            <div *ngIf="!loadingNotifications && notifications.length === 0">
+            <div *ngIf="!loadingNotifications && notifications.length === 0" class="notification-empty">
               No notifications
             </div>
 
-            <div *ngFor="let notif of notifications" class="notification-item">
-              🔔 {{ notif }}
+            <div class="notification-list" *ngIf="!loadingNotifications && notifications.length > 0">
+              <div *ngFor="let notif of notifications" class="notification-item">
+                <div class="notif-icon">🔔</div>
+                <div class="notif-content">
+                  <p class="notif-title">{{ notif }}</p>
+                </div>
+              </div>
             </div>
-
           </div>
         </div>
 
-        <!-- System Status -->
         <div class="topbar-badge">
           <span class="dot"></span>
-          System Active
+          <span>System Online</span>
+          <span class="caret">⌄</span>
         </div>
-
       </div>
     </header>
 
-    <!-- ===== Pages Content ===== -->
     <section class="content-card">
       <router-outlet></router-outlet>
     </section>
-
   </main>
 </div>
