@@ -16,6 +16,7 @@ export class AdminUsersComponent implements OnInit {
   searchTerm = '';
 
   users: AdminUser[] = [];
+  roleOptions: string[] = ['ROLE_USER', 'ROLE_ADMIN'];
 
   constructor(private adminService: AdminService) {}
 
@@ -29,7 +30,10 @@ export class AdminUsersComponent implements OnInit {
 
     this.adminService.getAllUsers().subscribe({
       next: (res) => {
-        this.users = res || [];
+        this.users = (res || []).map((user) => ({
+          ...user,
+          role: this.roleLabel(user),
+        }));
         this.loading = false;
       },
       error: (err) => {
@@ -53,6 +57,27 @@ export class AdminUsersComponent implements OnInit {
       error: (err) => {
         console.error(err);
         this.error = 'Delete user failed.';
+      },
+    });
+  }
+
+  changeRole(user: AdminUser, event: Event): void {
+    if (!user.id) return;
+
+    const select = event.target as HTMLSelectElement;
+    const newRole = select.value;
+    const oldRole = this.roleLabel(user);
+
+    if (newRole === oldRole) return;
+
+    this.adminService.updateUserRole(user.id, newRole).subscribe({
+      next: () => {
+        user.role = newRole;
+      },
+      error: (err) => {
+        console.error(err);
+        this.error = 'Update role failed.';
+        select.value = oldRole;
       },
     });
   }

@@ -28,6 +28,7 @@ export interface AdminTask {
 })
 export class AdminService {
   private http = inject(HttpClient);
+
   private allUsersApi = 'http://localhost:8080/api/users/admin';
   private usersApi = 'http://localhost:8080/api/users/admin/users';
   private tasksApi = 'http://localhost:8080/api/users/admin/tasks';
@@ -42,7 +43,15 @@ export class AdminService {
     });
   }
 
-getAllTasks(): Observable<AdminTask[]> {
-  return this.http.get<AdminTask[]>(`${this.tasksApi}/all`);
-}
+  getAllTasks(): Observable<AdminTask[]> {
+    return this.http.get<AdminTask[]>(`${this.tasksApi}/all`);
+  }
+
+  updateUserRole(id: number, role: string): Observable<string> {
+    return this.http.put(
+      `${this.usersApi}/${id}/role`,
+      { role },
+      { responseType: 'text' }
+    );
+  }
 }

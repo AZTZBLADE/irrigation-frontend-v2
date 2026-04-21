@@ -5,7 +5,7 @@
   <div class="head">
     <div>
       <h2>Smart Irrigation Tasks</h2>
-      <p class="subtitle">Weather-aware planning and AI recommendations</p>
+      <p class="subtitle">Automatic ongoing irrigation tasks with smart parcel mapping</p>
     </div>
 
     <button class="add-task-btn" type="button" (click)="openModal()">
@@ -24,10 +24,6 @@
 
   <div class="top-controls">
     <div class="tabs">
-      <button class="tab" [class.active]="activeTab === 'planned'" (click)="setTab('planned')">
-        Planned <span>{{ plannedCount }}</span>
-      </button>
-
       <button class="tab" [class.active]="activeTab === 'ongoing'" (click)="setTab('ongoing')">
         In Progress <span>{{ ongoingCount }}</span>
       </button>
@@ -98,7 +94,6 @@
 
         <div
           class="status-badge"
-          [class.planned]="task.status === 'planned'"
           [class.ongoing]="task.status === 'ongoing'"
           [class.done]="task.status === 'terminated'">
           {{ statusLabel(task.status) }}
@@ -148,7 +143,7 @@
 
       <div class="task-details">
         <div class="detail-item">
-          <span>Start Time</span>
+          <span>Started At</span>
           <b>{{ task.startTime }}</b>
         </div>
 
@@ -176,6 +171,16 @@
           <span>Debit</span>
           <b>{{ task.debit }}</b>
         </div>
+
+        <div class="detail-item">
+          <span>Main Parcel</span>
+          <b>{{ task.parcel ? 'Drawn' : 'Not defined' }}</b>
+        </div>
+
+        <div class="detail-item">
+          <span>Sub Parcels</span>
+          <b>{{ task.subParcels?.length || 0 }}</b>
+        </div>
       </div>
 
       <div class="ai-box" *ngIf="getInsight(task.id) as insight">
@@ -187,9 +192,7 @@
         <p>{{ insight.aiAdvice }}</p>
       </div>
 
-      <div
-        class="progress-box"
-        *ngIf="task.status === 'ongoing' || task.status === 'terminated'">
+      <div class="progress-box" *ngIf="task.status === 'ongoing' || task.status === 'terminated'">
         <div class="progress-head">
           <span>Progress</span>
           <b>{{ getProgress(task) }}%</b>
@@ -217,13 +220,6 @@
         </button>
 
         <button
-          class="action-btn start"
-          *ngIf="task.status !== 'ongoing' && task.status !== 'terminated'"
-          (click)="markAsOngoing(task)">
-          ▶ Start
-        </button>
-
-        <button
           class="action-btn complete"
           *ngIf="task.status !== 'terminated'"
           (click)="markAsTerminated(task)">
@@ -247,8 +243,10 @@
           <th>Crop</th>
           <th>Planting Date</th>
           <th>Soil Profile</th>
-          <th>Start Time</th>
+          <th>Started At</th>
           <th>Duration</th>
+          <th>Parcel</th>
+          <th>Zones</th>
           <th>Weather</th>
           <th>Status</th>
         </tr>
@@ -264,6 +262,8 @@
           <td>{{ task.soilProfile || '-' }}</td>
           <td>{{ task.startTime }}</td>
           <td>{{ task.duration }} min</td>
+          <td>{{ task.parcel ? 'Yes' : 'No' }}</td>
+          <td>{{ task.subParcels?.length || 0 }}</td>
           <td>
             <ng-container *ngIf="getInsight(task.id) as insight">
               {{ insight.weather.temperature }}°C / {{ insight.weather.humidity }}%
@@ -273,7 +273,7 @@
         </tr>
 
         <tr *ngIf="filteredTasks.length === 0">
-          <td colspan="10" class="empty-cell">No tasks found.</td>
+          <td colspan="12" class="empty-cell">No tasks found.</td>
         </tr>
       </tbody>
     </table>
@@ -294,12 +294,37 @@
         <input type="text" formControlName="name" placeholder="Irrigation Sector North" />
       </label>
 
+      <label class="autocomplete-field">
+        Crop
+        <input
+          type="text"
+          formControlName="crop"
+          placeholder="Type crop name"
+          (input)="onCropInput($event)"
+          (focus)="onCropInput($event)"
+          (blur)="hideCropSuggestions()" />
+
+        <div class="autocomplete-list" *ngIf="showCropSuggestions">
+          <div class="category-block" *ngFor="let category of filteredCropCategories">
+            <div class="category-title">{{ category.label }}</div>
+
+            <button
+              type="button"
+              class="autocomplete-item"
+              *ngFor="let crop of category.items"
+              (mousedown)="selectCrop(crop)">
+              {{ crop }}
+            </button>
+          </div>
+        </div>
+      </label>
+
       <label>
         Location
         <input
           type="text"
           formControlName="location"
-          placeholder="Choose location from map" />
+          placeholder="Parcel selected from map" />
       </label>
 
       <div class="location-actions">
@@ -309,16 +334,6 @@
       </div>
 
       <label>
-        Surface (m²)
-        <input type="number" formControlName="surface" placeholder="120" />
-      </label>
-
-      <label>
-        Start Time
-        <input type="datetime-local" formControlName="startTime" />
-      </label>
-
-      <label>
         Planting Date
         <input type="date" formControlName="plantingDate" />
       </label>
@@ -326,11 +341,6 @@
       <label>
         Duration (minutes)
         <input type="number" formControlName="duration" />
-      </label>
-
-      <label>
-        Crop
-        <input type="text" formControlName="crop" placeholder="Potatoes" />
       </label>
 
       <label>
@@ -353,14 +363,23 @@
         <input type="number" formControlName="debit" />
       </label>
 
-      <label>
-        Status
-        <select formControlName="status">
-          <option value="planned">Planned</option>
-          <option value="ongoing">In Progress</option>
-          <option value="terminated">Completed</option>
-        </select>
-      </label>
+      <input type="hidden" formControlName="parcel" />
+      <input type="hidden" formControlName="subParcels" />
+
+      <div class="detail-item" *ngIf="form.get('parcel')?.value || parcelGeoJson">
+        <span>Main Parcel</span>
+        <b>Selected</b>
+      </div>
+
+      <div class="detail-item">
+        <span>Sub Parcels</span>
+        <b>{{ subParcelsGeoJson.length || editingOriginalTask?.subParcels?.length || 0 }}</b>
+      </div>
+
+      <div class="detail-item">
+        <span>Computed Surface</span>
+        <b>{{ getComputedSurface(form.get('parcel')?.value, form.get('subParcels')?.value) }} m²</b>
+      </div>
 
       <div class="modal-actions">
         <button type="button" class="btn ghost" (click)="closeModal()">Cancel</button>
@@ -375,20 +394,29 @@
 
   <div class="map-modal" *ngIf="showMapModal">
     <div class="map-modal-header">
-      <h3>Select Location</h3>
+      <h3>Select Parcel and Sub-Parcels</h3>
       <button type="button" class="map-close" (click)="closeMapModal()">✕</button>
     </div>
 
     <div class="selected-location">
-      <span>Selected:</span>
-      <b>{{ selectedLatLng || 'Click on map to choose location' }}</b>
+      <span>Main parcel:</span>
+      <b>{{ parcelGeoJson ? 'Drawn successfully' : 'Draw the main parcel first' }}</b>
     </div>
 
-    <div class="map-container">
+    <div class="selected-location" style="top: 105px;">
+      <span>Sub parcels:</span>
+      <b>{{ subParcelsGeoJson.length }} zone(s)</b>
+    </div>
+
+    <div class="map-container" style="top: 150px;">
       <div id="task-map-modal"></div>
     </div>
 
     <div class="map-actions">
+      <button type="button" class="btn ghost" (click)="clearMapSelection()">
+        Clear
+      </button>
+
       <button type="button" class="btn ghost" (click)="closeMapModal()">
         Cancel
       </button>
@@ -396,9 +424,9 @@
       <button
         type="button"
         class="btn primary"
-        [disabled]="!selectedLatLng"
+        [disabled]="!parcelGeoJson"
         (click)="confirmMapLocation()">
-        Confirm Location
+        Confirm Parcel
       </button>
     </div>
   </div>

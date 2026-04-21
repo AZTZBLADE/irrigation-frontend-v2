@@ -2,7 +2,7 @@
   <div class="page-head">
     <div>
       <h2>Users Management</h2>
-      <p>View all users and remove accounts</p>
+      <p>View users, change roles, and remove accounts</p>
     </div>
 
     <input
@@ -21,7 +21,8 @@
           <th>ID</th>
           <th>Name</th>
           <th>Email</th>
-          <th>Role</th>
+          <th>Current Role</th>
+          <th>Change Role</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -33,12 +34,21 @@
           <td>{{ user.email }}</td>
           <td>{{ roleLabel(user) }}</td>
           <td>
+            <select
+              [ngModel]="roleLabel(user)"
+              (change)="changeRole(user, $event)">
+              <option *ngFor="let role of roleOptions" [value]="role">
+                {{ role }}
+              </option>
+            </select>
+          </td>
+          <td>
             <button class="danger-btn" (click)="deleteUser(user)">Delete</button>
           </td>
         </tr>
 
         <tr *ngIf="filteredUsers.length === 0">
-          <td colspan="5" class="empty-cell">No users found.</td>
+          <td colspan="6" class="empty-cell">No users found.</td>
         </tr>
       </tbody>
     </table>

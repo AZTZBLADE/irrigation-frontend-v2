@@ -2,8 +2,21 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-export type TaskStatus = 'planned' | 'ongoing' | 'terminated';
+export type TaskStatus = 'ongoing' | 'terminated';
 
+// ================= GEOJSON =================
+export interface GeoJsonGeometry {
+  type: string;
+  coordinates: any;
+}
+
+export interface GeoJsonFeature {
+  type: 'Feature';
+  geometry: GeoJsonGeometry;
+  properties?: Record<string, any>;
+}
+
+// ================= TASK =================
 export interface Task {
   id?: number;
   name: string;
@@ -18,8 +31,11 @@ export interface Task {
   crop: string;
   userEmail?: string;
   status?: TaskStatus;
+  parcel?: GeoJsonFeature;
+  subParcels?: GeoJsonFeature[];
 }
 
+// ================= WEATHER =================
 export interface WeatherTaskInsight {
   taskId: number;
   taskName: string;
@@ -39,6 +55,7 @@ export interface WeatherTaskInsight {
   aiAdvice: string;
 }
 
+// ================= SERVICE =================
 @Injectable({
   providedIn: 'root',
 })
@@ -50,6 +67,10 @@ export class TaskService {
 
   getTasks(): Observable<Task[]> {
     return this.http.get<Task[]>(`${this.tasksApi}/all`);
+  }
+
+  getTaskById(id: number): Observable<Task> {
+    return this.http.get<Task>(`${this.tasksApi}/${id}`);
   }
 
   createTask(task: Task): Observable<Task> {
@@ -67,7 +88,9 @@ export class TaskService {
   }
 
   getTaskWeatherInsight(taskId: number): Observable<WeatherTaskInsight> {
-    return this.http.get<WeatherTaskInsight>(`${this.weatherApi}/task/${taskId}`);
+    return this.http.get<WeatherTaskInsight>(
+      `${this.weatherApi}/task/${taskId}`
+    );
   }
 
   getAutomatedInsights(): Observable<any> {

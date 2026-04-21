@@ -10,8 +10,10 @@ export class ChatbotService {
 
   constructor(private http: HttpClient) {}
 
+  // ===== Headers (JWT) =====
   private getAuthHeaders(contentType?: string): HttpHeaders {
     const token = localStorage.getItem('token') || '';
+
     let headers = new HttpHeaders({
       Authorization: `Bearer ${token}`,
     });
@@ -23,23 +25,29 @@ export class ChatbotService {
     return headers;
   }
 
-  chat(message: string): Observable<any> {
-    return this.http.post(
-      `${this.baseUrl}/chat`,
-      message,
-      {
-        headers: this.getAuthHeaders('text/plain'),
-        responseType: 'text',
-      }
-    );
+  // ===== CHAT TEXT =====
+  chat(message: string): Observable<string> {
+    return this.http.post(`${this.baseUrl}/chat`, message, {
+      headers: this.getAuthHeaders('text/plain'),
+      responseType: 'text',
+    });
   }
 
-  analyzeImage(file: File): Observable<any> {
+  // ===== IMAGE ANALYSIS =====
+  analyzeImage(file: File): Observable<string> {
     const formData = new FormData();
     formData.append('file', file);
 
     return this.http.post(`${this.baseUrl}/analyze`, formData, {
-      headers: this.getAuthHeaders(),
+      headers: this.getAuthHeaders(), // ❌ ما نحطوش content-type هنا
+      responseType: 'text', // 🔥 أهم fix
+    });
+  }
+
+  // ===== OPTIONAL: TEST CONNECTION =====
+  ping(): Observable<string> {
+    return this.http.get(`${this.baseUrl}/ping`, {
+      responseType: 'text',
     });
   }
 }

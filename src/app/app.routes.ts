@@ -19,13 +19,13 @@ import { UserWeatherComponent } from './pages/user-dashboard/pages/user-weather/
 import { UserProfileComponent } from './pages/user-dashboard/pages/user-profile/user-profile.component';
 import { AnalyticsComponent } from './pages/user-dashboard/pages/user-analytics/user-analytics.component';
 import { UserReportComponent } from './pages/user-dashboard/pages/user-report/user-report.component';
+import { UserChatbotComponent } from './pages/user-dashboard/pages/user-chatbot/user-chatbot.component';
+import { UserFarmsComponent } from './pages/user-dashboard/pages/user-farms/user-farms.component';
 
 // Guard
 import { authGuard } from './core/auth.guard';
-import { UserChatbotComponent } from './pages/user-dashboard/pages/user-chatbot/user-chatbot.component';
 
 export const routes: Routes = [
-
   // ================= PUBLIC =================
   { path: '', component: WelcomePageComponent },
   { path: 'login', component: LoginComponent },
@@ -54,12 +54,13 @@ export const routes: Routes = [
       { path: '', redirectTo: 'tasks', pathMatch: 'full' },
 
       { path: 'tasks', component: UserTasksComponent },
+      { path: 'farms', component: UserFarmsComponent },
       { path: 'analytics', component: AnalyticsComponent },
       { path: 'ai-advice', component: UserAiAdviceComponent },
       { path: 'weather', component: UserWeatherComponent },
       { path: 'chatbot', component: UserChatbotComponent },
       { path: 'profile', component: UserProfileComponent },
-      { path: 'report', component: UserReportComponent }, // 🔥 report page
+      { path: 'report', component: UserReportComponent },
     ],
   },
 

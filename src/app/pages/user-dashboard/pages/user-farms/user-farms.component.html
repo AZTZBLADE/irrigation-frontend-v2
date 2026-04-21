@@ -1,0 +1,234 @@
+<div class="farms-page">
+  <div class="farms-bg-blur blur-one"></div>
+  <div class="farms-bg-blur blur-two"></div>
+
+  <div class="head">
+    <div>
+      <h2>My Farms</h2>
+      <p class="subtitle">Manage your fields and launch smart irrigation</p>
+    </div>
+
+    <button class="add-farm-btn" type="button" (click)="openModal()">
+      <span>＋</span>
+      <span>Add Farm</span>
+    </button>
+  </div>
+
+  <div class="state" *ngIf="loading">Loading farms...</div>
+  <div class="state error" *ngIf="error">{{ error }}</div>
+
+  <div class="farm-grid" *ngIf="!loading">
+    <div class="farm-card" *ngFor="let farm of farms">
+      <div class="card-topbar">
+        <div class="card-icon">🌾</div>
+      </div>
+
+      <div class="farm-main-info">
+        <div class="farm-name">{{ farm.name }}</div>
+
+        <div class="farm-tags">
+          <span class="tag location">📍 {{ farm.location }}</span>
+          <span class="tag crop">🌿 {{ farm.crop }}</span>
+          <span class="tag surface">📐 {{ farm.surface }} m²</span>
+          <span class="tag soil">🧱 {{ farm.soilProfile }}</span>
+        </div>
+      </div>
+
+      <div class="farm-divider"></div>
+
+      <div class="farm-details">
+        <div class="detail-item">
+          <span>Parcel</span>
+          <b>{{ farm.parcelJson ? 'Selected' : 'Not defined' }}</b>
+        </div>
+
+        <div class="detail-item">
+          <span>Crop</span>
+          <b>{{ farm.crop }}</b>
+        </div>
+
+        <div class="detail-item">
+          <span>Location</span>
+          <b>{{ farm.location }}</b>
+        </div>
+
+        <div class="detail-item">
+          <span>Surface</span>
+          <b>{{ farm.surface }} m²</b>
+        </div>
+
+        <div class="detail-item">
+          <span>Soil Profile</span>
+          <b>{{ farm.soilProfile }}</b>
+        </div>
+      </div>
+
+      <div class="farm-actions">
+        <button class="action-btn edit" (click)="editFarm(farm)">✏ Edit</button>
+        <button class="action-btn delete" (click)="deleteFarm(farm)">🗑 Delete</button>
+        <button class="action-btn irrigate" (click)="askAdvice(farm)">💧 Irrigate</button>
+      </div>
+    </div>
+
+    <div class="empty" *ngIf="farms.length === 0">
+      No farms found.
+    </div>
+  </div>
+
+  <div class="backdrop" *ngIf="showModal" (click)="closeModal()"></div>
+
+  <div class="modal" *ngIf="showModal">
+    <div class="modal-title">
+      {{ editingFarmId ? 'Edit Farm' : 'Add New Farm' }}
+    </div>
+
+    <form class="form" [formGroup]="form" (ngSubmit)="submit()">
+      <label>
+        Farm Name
+        <input type="text" formControlName="name" placeholder="Parcelle test ISET" />
+      </label>
+
+      <label class="autocomplete-field">
+        Crop
+        <input
+          type="text"
+          formControlName="crop"
+          placeholder="Type crop name"
+          (input)="onCropInput($event)"
+          (focus)="onCropInput($event)"
+          (blur)="hideCropSuggestions()" />
+
+        <div class="autocomplete-list" *ngIf="showCropSuggestions">
+          <div class="category-block" *ngFor="let category of filteredCropCategories">
+            <div class="category-title">{{ category.label }}</div>
+
+            <button
+              type="button"
+              class="autocomplete-item"
+              *ngFor="let crop of category.items"
+              (mousedown)="selectCrop(crop)">
+              {{ crop }}
+            </button>
+          </div>
+        </div>
+      </label>
+
+      <label>
+        Location
+        <input type="text" formControlName="location" placeholder="Parcel selected from map" />
+      </label>
+
+      <div class="location-actions">
+        <button type="button" class="btn-map" (click)="openMapModal()">
+          Open Map
+        </button>
+      </div>
+
+      <label>
+        Soil Profile
+        <select formControlName="soilProfile">
+          <option value="">Select soil profile</option>
+          <option *ngFor="let soil of soilProfiles" [value]="soil">
+            {{ soil }}
+          </option>
+        </select>
+      </label>
+
+      <input type="hidden" formControlName="parcelJson" />
+
+      <div class="detail-item" *ngIf="form.get('parcelJson')?.value">
+        <span>Parcel</span>
+        <b>Selected</b>
+      </div>
+
+      <div class="detail-item" *ngIf="form.get('parcelJson')?.value">
+        <span>Computed Surface</span>
+        <b>{{ getComputedSurface() }} m²</b>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" (click)="closeModal()">Cancel</button>
+        <button type="submit" class="btn primary" [disabled]="loading">
+          {{ editingFarmId ? 'Update Farm' : 'Add Farm' }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="map-backdrop" *ngIf="showMapModal"></div>
+
+  <div class="map-modal" *ngIf="showMapModal">
+    <div class="map-modal-header">
+      <h3>Select Farm Parcel</h3>
+      <button type="button" class="map-close" (click)="closeMapModal()">✕</button>
+    </div>
+
+    <div class="selected-location">
+      <span>Parcel:</span>
+      <b>{{ parcelGeoJson ? 'Drawn successfully' : 'Draw parcel on map' }}</b>
+    </div>
+
+    <div class="map-container">
+      <div id="farm-map-modal"></div>
+    </div>
+
+    <div class="map-actions">
+      <button type="button" class="btn ghost" (click)="clearMapSelection()">
+        Clear
+      </button>
+
+      <button type="button" class="btn ghost" (click)="closeMapModal()">
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        class="btn primary"
+        [disabled]="!parcelGeoJson"
+        (click)="confirmMapLocation()">
+        Confirm Parcel
+      </button>
+    </div>
+  </div>
+
+  <div class="backdrop" *ngIf="showAdviceModal" (click)="closeAdviceModal()"></div>
+
+  <div class="advice-modal" *ngIf="showAdviceModal">
+    <div class="modal-title">AI Irrigation Advice</div>
+
+    <div class="advice-content">
+      <p>{{ aiAdvice }}</p>
+
+      <form class="irrigation-form" [formGroup]="irrigationForm">
+        <label>
+          Water Amount (L)
+          <input type="number" formControlName="waterAmount" />
+        </label>
+
+        <label>
+          Duration (min)
+          <input type="number" formControlName="duration" />
+        </label>
+
+        <label>
+          Debit
+          <input type="number" formControlName="debit" />
+        </label>
+      </form>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn ghost" (click)="closeAdviceModal()">
+        Annuler
+      </button>
+
+      <button
+        type="button"
+        class="btn primary"
+        [disabled]="irrigationForm.invalid"
+        (click)="confirmIrrigation()">
+        OK
+      </button>
+    </div>
+  </div>
+</div>
