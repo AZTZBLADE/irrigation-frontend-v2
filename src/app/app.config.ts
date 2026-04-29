@@ -5,7 +5,6 @@ import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 
 import { routes } from './app.routes';
 import { jwtInterceptor } from './core/jwt.interceptor';
-
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),

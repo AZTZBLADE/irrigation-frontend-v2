@@ -1,2 +1,71 @@
-<h2>Weather</h2>
-<p>هنا weather card + forecast.</p>
+<div class="weather-page">
+  <div class="weather-hero">
+    <div>
+      <span class="eyebrow">Farm Weather Center</span>
+      <h2>Weather Monitoring</h2>
+      <p>Real-time conditions and 3-day forecast for every farm.</p>
+    </div>
+
+    <button class="refresh-btn" type="button" (click)="loadWeather()">
+      ↻ Refresh
+    </button>
+  </div>
+
+  <div class="state loading" *ngIf="loading">Loading weather data...</div>
+  <div class="state error" *ngIf="error">{{ error }}</div>
+
+  <div class="weather-grid" *ngIf="!loading && !error">
+    <div class="weather-card" *ngFor="let farm of weatherData">
+      <div class="card-header">
+        <div>
+          <h3>{{ farm.farmName }}</h3>
+          <p>Farm ID #{{ farm.farmId }}</p>
+        </div>
+
+        <div class="city-pill">
+          📍 {{ farm.weather.cityName }}
+        </div>
+      </div>
+
+      <div class="current-section">
+        <div class="weather-icon">🌤️</div>
+
+        <div class="temperature-block">
+          <span class="temperature">
+            {{ farm.weather.current.temperature }}°C
+          </span>
+          <span class="description">
+            {{ farm.weather.current.description }}
+          </span>
+        </div>
+      </div>
+
+      <div class="metrics">
+        <div class="metric">
+          <span>Humidity</span>
+          <b>{{ farm.weather.current.humidity }}%</b>
+        </div>
+
+        <div class="metric">
+          <span>Rain Probability</span>
+          <b>{{ farm.weather.current.rainProbability }}%</b>
+        </div>
+      </div>
+
+      <div class="forecast-title">3-Day Forecast</div>
+
+      <div class="forecast-grid">
+        <div class="forecast-card" *ngFor="let f of farm.weather.forecast">
+          <span class="forecast-date">{{ f.date }}</span>
+          <strong>{{ f.tempMax }}°C</strong>
+          <small>{{ f.description }}</small>
+          <em>Rain {{ f.rainProbability }}%</em>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty" *ngIf="weatherData.length === 0">
+      No weather data found.
+    </div>
+  </div>
+</div>

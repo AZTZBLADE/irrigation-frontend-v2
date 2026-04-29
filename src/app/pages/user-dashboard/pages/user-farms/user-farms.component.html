@@ -20,7 +20,16 @@
   <div class="farm-grid" *ngIf="!loading">
     <div class="farm-card" *ngFor="let farm of farms">
       <div class="card-topbar">
-        <div class="card-icon">🌾</div>
+        <img
+          *ngIf="farm.image; else defaultIcon"
+          class="farm-card-img"
+          [src]="farm.image"
+          alt="Farm photo"
+        />
+
+        <ng-template #defaultIcon>
+          <div class="card-icon">🌾</div>
+        </ng-template>
       </div>
 
       <div class="farm-main-info">
@@ -37,6 +46,11 @@
       <div class="farm-divider"></div>
 
       <div class="farm-details">
+        <div class="detail-item">
+          <span>Photo</span>
+          <b>{{ farm.image ? 'Uploaded' : 'No photo' }}</b>
+        </div>
+
         <div class="detail-item">
           <span>Parcel</span>
           <b>{{ farm.parcelJson ? 'Selected' : 'Not defined' }}</b>
@@ -96,7 +110,8 @@
           placeholder="Type crop name"
           (input)="onCropInput($event)"
           (focus)="onCropInput($event)"
-          (blur)="hideCropSuggestions()" />
+          (blur)="hideCropSuggestions()"
+        />
 
         <div class="autocomplete-list" *ngIf="showCropSuggestions">
           <div class="category-block" *ngFor="let category of filteredCropCategories">
@@ -106,7 +121,8 @@
               type="button"
               class="autocomplete-item"
               *ngFor="let crop of category.items"
-              (mousedown)="selectCrop(crop)">
+              (mousedown)="selectCrop(crop)"
+            >
               {{ crop }}
             </button>
           </div>
@@ -134,7 +150,21 @@
         </select>
       </label>
 
+      <label>
+        Farm Photo
+        <input type="file" accept="image/*" (change)="onImageSelected($event)" />
+      </label>
+
+      <div class="image-preview" *ngIf="form.get('image')?.value">
+        <img [src]="form.get('image')?.value" alt="Farm preview" />
+
+        <button type="button" class="remove-image-btn" (click)="removeImage()">
+          Remove photo
+        </button>
+      </div>
+
       <input type="hidden" formControlName="parcelJson" />
+      <input type="hidden" formControlName="image" />
 
       <div class="detail-item" *ngIf="form.get('parcelJson')?.value">
         <span>Parcel</span>
@@ -185,7 +215,8 @@
         type="button"
         class="btn primary"
         [disabled]="!parcelGeoJson"
-        (click)="confirmMapLocation()">
+        (click)="confirmMapLocation()"
+      >
         Confirm Parcel
       </button>
     </div>
@@ -226,7 +257,8 @@
         type="button"
         class="btn primary"
         [disabled]="irrigationForm.invalid"
-        (click)="confirmIrrigation()">
+        (click)="confirmIrrigation()"
+      >
         OK
       </button>
     </div>

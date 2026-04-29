@@ -21,6 +21,7 @@ export interface Farm {
   surface: number;
   soilProfile: string;
   parcelJson?: string;
+  image?: string;
 }
 
 @Injectable({
@@ -29,6 +30,7 @@ export interface Farm {
 export class FarmService {
   private http = inject(HttpClient);
   private api = 'http://localhost:8080/api/farms';
+  private weatherApi = 'http://localhost:8080/api/weather';
 
   getFarms(): Observable<Farm[]> {
     return this.http.get<Farm[]>(`${this.api}/all`);
@@ -49,6 +51,14 @@ export class FarmService {
   deleteFarm(id: number): Observable<string> {
     return this.http.delete(`${this.api}/${id}`, {
       responseType: 'text',
+    });
+  }
+
+  askAdvice(farm: Farm): Observable<any> {
+    return this.http.post<any>(`${this.weatherApi}/ask-advice`, {
+      farmId: farm.id,
+      crop: farm.crop,
+      soilProfile: farm.soilProfile,
     });
   }
 

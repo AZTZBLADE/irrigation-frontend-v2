@@ -11,7 +11,6 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import {
   FarmService,
   Farm,
@@ -72,6 +71,7 @@ export class UserFarmsComponent implements OnInit, OnDestroy {
     location: ['', Validators.required],
     soilProfile: ['', Validators.required],
     parcelJson: [''],
+    image: [''],
   });
 
   irrigationForm = this.fb.group({
@@ -82,8 +82,7 @@ export class UserFarmsComponent implements OnInit, OnDestroy {
 
   constructor(
     private fb: FormBuilder,
-    private farmService: FarmService,
-    private http: HttpClient
+    private farmService: FarmService
   ) {}
 
   ngOnInit(): void {
@@ -129,6 +128,7 @@ export class UserFarmsComponent implements OnInit, OnDestroy {
       location: '',
       soilProfile: '',
       parcelJson: '',
+      image: '',
     });
 
     this.showModal = true;
@@ -156,6 +156,7 @@ export class UserFarmsComponent implements OnInit, OnDestroy {
       location: farm.location,
       soilProfile: farm.soilProfile,
       parcelJson: farm.parcelJson || '',
+      image: farm.image || '',
     });
 
     this.showModal = true;
@@ -183,6 +184,7 @@ export class UserFarmsComponent implements OnInit, OnDestroy {
       surface: computedSurface,
       soilProfile: raw.soilProfile || '',
       parcelJson: raw.parcelJson || '',
+      image: raw.image || '',
     };
 
     if (this.editingFarmId !== null) {
@@ -214,6 +216,34 @@ export class UserFarmsComponent implements OnInit, OnDestroy {
     }
   }
 
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      this.form.patchValue({
+        image: reader.result as string,
+      });
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  removeImage(): void {
+    this.form.patchValue({
+      image: '',
+    });
+  }
+
   deleteFarm(farm: Farm): void {
     if (!farm.id) return;
     if (!confirm('Delete this farm ?')) return;
@@ -230,6 +260,11 @@ export class UserFarmsComponent implements OnInit, OnDestroy {
   }
 
   askAdvice(farm: Farm): void {
+    if (!farm.id) {
+      alert('Farm ID not found');
+      return;
+    }
+
     this.selectedFarm = farm;
     this.loadingAdvice = true;
     this.aiAdvice = '';
@@ -240,23 +275,18 @@ export class UserFarmsComponent implements OnInit, OnDestroy {
       debit: 12,
     });
 
-    this.http
-      .post<any>('http://localhost:8080/api/weather/ask-advice', {
-        crop: farm.crop,
-        soilProfile: farm.soilProfile,
-      })
-      .subscribe({
-        next: (res) => {
-          this.aiAdvice = res?.advice || 'AI advice not available.';
-          this.showAdviceModal = true;
-          this.loadingAdvice = false;
-        },
-        error: (err) => {
-          console.error(err);
-          this.loadingAdvice = false;
-          alert('Failed to get AI advice');
-        },
-      });
+    this.farmService.askAdvice(farm).subscribe({
+      next: (res) => {
+        this.aiAdvice = res?.advice || 'AI advice not available.';
+        this.showAdviceModal = true;
+        this.loadingAdvice = false;
+      },
+      error: (err) => {
+        console.error(err);
+        this.loadingAdvice = false;
+        alert('Failed to get AI advice');
+      },
+    });
   }
 
   closeAdviceModal(): void {
